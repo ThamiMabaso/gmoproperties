@@ -23,6 +23,7 @@ use App\Http\Controllers\Company\UnitController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ObjectiveController;
+use App\Http\Controllers\Portal\DashboardController as PortalDashboardController;
 use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SearchController;
@@ -79,6 +80,7 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+    Route::get('/portal/dashboard', [PortalDashboardController::class, 'index'])->name('portal.dashboard');
 });
 
 /*

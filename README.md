@@ -102,6 +102,8 @@ php artisan db:seed --class=TestUsersSeeder
 
 New migrations (from 2026-04-30 onward) add the `notifications` table, `announcements` / `announcement_reads`, `notification_preferences`, `admin_update_reports`, and Spatie permissions for reports, announcements, and notifications. Existing environments should run `migrate` once; roles receive the new permissions via the migration grant step (and the seeder on fresh installs).
 
+If you see **Unknown column `published_at` on `announcements`**, an older `announcements` table may exist without the full schema. Run `php artisan migrate` so `2026_04_30_130000_ensure_announcements_table_columns` can add any missing columns. In code, prefer `Announcement::query()->publishedVisible()` instead of hand-written `where('expires_at', '>', now())`, which hides rows with a null expiry.
+
 8. Build assets:
 ```bash
 npm run build
@@ -175,6 +177,7 @@ gmoproperties/
 ### Authentication
 - `/login` - Login page
 - `/register` - Registration page
+- `/portal/dashboard` - Authenticated “portal” announcements preview (optional; uses `layouts.app`)
 
 ### Service Provider Admin Portal
 - `/admin/dashboard` - Admin dashboard
