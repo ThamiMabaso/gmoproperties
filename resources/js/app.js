@@ -1,4 +1,5 @@
 import './bootstrap';
+import './dashboard-charts';
 
 // Mobile menu toggle
 document.addEventListener('DOMContentLoaded', function() {

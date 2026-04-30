@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -18,13 +19,49 @@ class LoginController extends Controller
      */
     public function showLoginForm()
     {
-        return view('auth.login');
+        $demoAccounts = [];
+
+        if (app()->environment('local')) {
+            $demoAccounts = [
+                [
+                    'label' => 'Platform admin',
+                    'hint' => 'Service provider — /admin',
+                    'email' => 'admin@test.com',
+                    'password' => 'password',
+                ],
+                [
+                    'label' => 'Company admin',
+                    'hint' => 'Property company — Premium Properties',
+                    'email' => 'company@test.com',
+                    'password' => 'password',
+                ],
+                [
+                    'label' => 'Property manager',
+                    'hint' => 'Operations — same company portal',
+                    'email' => 'manager@test.com',
+                    'password' => 'password',
+                ],
+                [
+                    'label' => 'Tenant',
+                    'hint' => 'Resident portal',
+                    'email' => 'tenant@test.com',
+                    'password' => 'password',
+                ],
+                [
+                    'label' => 'Tenant (student)',
+                    'hint' => 'Student Housing SA',
+                    'email' => 'student@test.com',
+                    'password' => 'password',
+                ],
+            ];
+        }
+
+        return view('auth.login', compact('demoAccounts'));
     }
 
     /**
      * Handle a login request.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function login(Request $request)
@@ -42,7 +79,7 @@ class LoginController extends Controller
             $user = Auth::user();
 
             // Check if user is active
-            if (!$user->is_active) {
+            if (! $user->is_active) {
                 Auth::logout();
                 throw ValidationException::withMessages([
                     'email' => 'Your account has been deactivated. Please contact support.',
@@ -61,7 +98,6 @@ class LoginController extends Controller
     /**
      * Log the user out.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function logout(Request $request)
@@ -76,25 +112,9 @@ class LoginController extends Controller
 
     /**
      * Redirect user based on their type.
-     *
-     * @param  \App\Models\User  $user
-     * @return \Illuminate\Http\RedirectResponse
      */
-    protected function redirectBasedOnUserType($user)
+    protected function redirectBasedOnUserType(User $user): \Illuminate\Http\RedirectResponse
     {
-        if ($user->isServiceProviderAdmin()) {
-            return redirect()->route('admin.dashboard');
-        }
-
-        if ($user->isCompanyAdmin() || $user->isPropertyManager()) {
-            $company = $user->company;
-            return redirect()->route('company.dashboard', ['company' => $company->slug]);
-        }
-
-        if ($user->isTenant()) {
-            return redirect()->route('tenant.dashboard');
-        }
-
-        return redirect()->route('home');
+        return redirect()->to($user->portalDashboardUrl());
     }
 }

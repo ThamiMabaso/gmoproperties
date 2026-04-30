@@ -23,7 +23,9 @@ class BuildingController extends BaseCompanyController
     {
         $this->ensureCompanyAccess($company);
 
-        $buildings = $company->buildings()
+        $buildingIds = $this->managedBuildingIdsFor($company);
+
+        $buildings = $this->scopedBuildingsQuery($company, $buildingIds)
             ->withCount('units')
             ->latest()
             ->paginate(15);
@@ -40,6 +42,7 @@ class BuildingController extends BaseCompanyController
     public function create(Company $company): View
     {
         $this->ensureCompanyAccess($company);
+        $this->ensureCanManageBuildingDirectory($company);
 
         return view('company.buildings.create', compact('company'));
     }
@@ -54,6 +57,7 @@ class BuildingController extends BaseCompanyController
     public function store(Company $company, Request $request): RedirectResponse
     {
         $this->ensureCompanyAccess($company);
+        $this->ensureCanManageBuildingDirectory($company);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -89,10 +93,7 @@ class BuildingController extends BaseCompanyController
     public function show(Company $company, Building $building): View
     {
         $this->ensureCompanyAccess($company);
-
-        if ($building->company_id !== $company->id) {
-            abort(403, 'Unauthorized access to this building.');
-        }
+        $this->ensureBuildingInScope($company, $building);
 
         $building->load(['units', 'expenses']);
 
@@ -114,10 +115,7 @@ class BuildingController extends BaseCompanyController
     public function edit(Company $company, Building $building): View
     {
         $this->ensureCompanyAccess($company);
-
-        if ($building->company_id !== $company->id) {
-            abort(403, 'Unauthorized access to this building.');
-        }
+        $this->ensureBuildingInScope($company, $building);
 
         return view('company.buildings.edit', compact('company', 'building'));
     }
@@ -133,10 +131,7 @@ class BuildingController extends BaseCompanyController
     public function update(Company $company, Building $building, Request $request): RedirectResponse
     {
         $this->ensureCompanyAccess($company);
-
-        if ($building->company_id !== $company->id) {
-            abort(403, 'Unauthorized access to this building.');
-        }
+        $this->ensureBuildingInScope($company, $building);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -169,10 +164,8 @@ class BuildingController extends BaseCompanyController
     public function destroy(Company $company, Building $building): RedirectResponse
     {
         $this->ensureCompanyAccess($company);
-
-        if ($building->company_id !== $company->id) {
-            abort(403, 'Unauthorized access to this building.');
-        }
+        $this->ensureCanManageBuildingDirectory($company);
+        $this->ensureBuildingInScope($company, $building);
 
         // Check if building has units
         if ($building->units()->count() > 0) {

@@ -10,7 +10,6 @@ use App\Models\TenantApplication;
 use App\Models\Unit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class ApplicationController extends Controller
@@ -22,12 +21,35 @@ class ApplicationController extends Controller
      */
     public function index()
     {
-        $companies = Company::where('is_active', true)->get();
-        $units = Unit::where('status', 'available')
-            ->with(['building', 'company'])
-            ->paginate(12);
+        $companies = Company::where('is_active', true)->orderBy('name')->get();
 
-        return view('tenant.applications.index', compact('companies', 'units'));
+        $unitsQuery = Unit::query()
+            ->where('status', 'available')
+            ->with(['building', 'company']);
+
+        if (request()->filled('company')) {
+            $unitsQuery->where('company_id', (int) request('company'));
+        }
+
+        $units = $unitsQuery->paginate(12)->withQueryString();
+
+        $user = Auth::user();
+
+        $myApplications = TenantApplication::query()
+            ->where(function ($query) use ($user) {
+                $query->where('email', $user->email);
+
+                if (! empty($user->id_number)) {
+                    $query->orWhere('id_number', $user->id_number);
+                }
+            })
+            ->with(['unit.building', 'company'])
+            ->latest()
+            ->get()
+            ->unique('id')
+            ->values();
+
+        return view('tenant.applications.index', compact('companies', 'units', 'myApplications'));
     }
 
     /**
@@ -38,8 +60,8 @@ class ApplicationController extends Controller
      */
     public function create(Unit $unit)
     {
-        // Check if user already has an active application
-        $existingApplication = TenantApplication::where('email', Auth::check() ? Auth::user()->email : request('email'))
+        // Check if user already has an active application (portal uses account email)
+        $existingApplication = TenantApplication::where('email', Auth::user()->email)
             ->whereIn('status', ['pending', 'under_review'])
             ->first();
 
@@ -66,7 +88,7 @@ class ApplicationController extends Controller
             'application_type' => ['required', Rule::in(['student', 'working_tenant'])],
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
+            'email' => ['required', 'email', 'max:255', Rule::in([Auth::user()->email])],
             'phone' => 'required|string|max:20',
             'id_number' => 'required|string|unique:tenant_applications,id_number',
             'lease_start_date' => 'required|date|after_or_equal:today',
@@ -95,6 +117,8 @@ class ApplicationController extends Controller
         $rules['next_of_kin_relationship'] = 'required|string|max:255';
 
         $validated = $request->validate($rules);
+
+        $validated['email'] = Auth::user()->email;
 
         // Check for existing application with same ID number
         $existingApplication = TenantApplication::where('id_number', $validated['id_number'])
@@ -179,6 +203,15 @@ class ApplicationController extends Controller
      */
     public function show(TenantApplication $application)
     {
+        $user = Auth::user();
+
+        $ownsByEmail = $application->email === $user->email;
+        $ownsById = $user->id_number !== null && $user->id_number !== '' && $application->id_number === $user->id_number;
+
+        if (! $ownsByEmail && ! $ownsById) {
+            abort(403, 'You can only view your own applications.');
+        }
+
         $application->load(['unit.building', 'company', 'documents']);
 
         return view('tenant.applications.show', compact('application'));

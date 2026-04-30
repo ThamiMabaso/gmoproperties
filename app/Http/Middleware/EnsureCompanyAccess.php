@@ -21,50 +21,40 @@ class EnsureCompanyAccess
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login');
         }
 
+        $company = $this->resolveCompanyFromRoute($request);
+
         // Service provider admins have access to all companies
         if ($user->isServiceProviderAdmin()) {
-            // Load company from slug if provided
-            $companySlug = $request->route('company');
-            if ($companySlug) {
-                $company = Company::where('slug', $companySlug)->first();
-                if ($company) {
-                    $request->merge(['company' => $company]);
-                }
+            if ($company !== null) {
+                $request->merge(['company' => $company]);
             }
+
             return $next($request);
         }
 
         // For other users, ensure they have a company_id
-        if (!$user->company_id) {
+        if (! $user->company_id) {
             Auth::logout();
+
             return redirect()->route('login')->with('error', 'Your account is not associated with a company.');
         }
 
-        // Validate that the company slug in URL matches user's company
-        $companySlug = $request->route('company');
-        if ($companySlug) {
-            $company = Company::where('slug', $companySlug)->first();
-            
-            if (!$company) {
-                abort(404, 'Company not found');
-            }
-
+        if ($company !== null) {
             // Ensure user's company matches the URL company
             if ($user->company_id !== $company->id) {
                 abort(403, 'You do not have access to this company.');
             }
 
-            // Set company context for the request
             $request->merge(['company' => $company]);
         } else {
             // Load user's company if not in URL
-            $company = $user->company;
-            if ($company) {
-                $request->merge(['company' => $company]);
+            $fallbackCompany = $user->company;
+            if ($fallbackCompany) {
+                $request->merge(['company' => $fallbackCompany]);
             }
         }
 
@@ -72,5 +62,37 @@ class EnsureCompanyAccess
         $request->merge(['company_id' => $user->company_id]);
 
         return $next($request);
+    }
+
+    /**
+     * Route model binding may pass a Company instance; numeric URLs use id; otherwise slug.
+     */
+    private function resolveCompanyFromRoute(Request $request): ?Company
+    {
+        $value = $request->route('company');
+
+        if ($value instanceof Company) {
+            return $value;
+        }
+
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $str = (string) $value;
+
+        $table = (new Company())->getTable();
+
+        $bySlug = Company::query()->where($table . '.slug', $str)->first();
+
+        if ($bySlug !== null) {
+            return $bySlug;
+        }
+
+        if (ctype_digit($str)) {
+            return Company::query()->whereKey((int) $str)->first();
+        }
+
+        return null;
     }
 }

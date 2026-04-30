@@ -159,7 +159,7 @@ class CompanyController extends Controller
             // Ensure unique slug
             $baseSlug = $validated['slug'];
             $counter = 1;
-            while (Company::where('slug', $validated['slug'])->where('id', '!=', $company->id)->exists()) {
+            while (Company::query()->where('slug', $validated['slug'])->whereKeyNot($company->getKey())->exists()) {
                 $validated['slug'] = $baseSlug . '-' . $counter;
                 $counter++;
             }

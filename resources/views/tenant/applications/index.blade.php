@@ -5,6 +5,45 @@
 
 @section('content')
 <div class="space-y-6">
+    @if($myApplications->isNotEmpty())
+        <div class="bg-white rounded-lg shadow p-6 border border-gmo-gold/30">
+            <h2 class="text-xl font-bold text-gray-900 mb-2">My applications</h2>
+            <p class="text-sm text-gray-600 mb-4">Submitted under your account email ({{ Auth::user()->email }}).</p>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left font-semibold text-gray-700">Unit</th>
+                            <th class="px-4 py-2 text-left font-semibold text-gray-700">Company</th>
+                            <th class="px-4 py-2 text-left font-semibold text-gray-700">Type</th>
+                            <th class="px-4 py-2 text-left font-semibold text-gray-700">Status</th>
+                            <th class="px-4 py-2 text-left font-semibold text-gray-700">Submitted</th>
+                            <th class="px-4 py-2 text-right font-semibold text-gray-700"> </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @foreach($myApplications as $app)
+                            <tr class="hover:bg-gray-50/80">
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    {{ $app->unit?->building?->name ?? '—' }} — {{ $app->unit?->unit_number ?? '—' }}
+                                </td>
+                                <td class="px-4 py-3">{{ $app->company?->name ?? '—' }}</td>
+                                <td class="px-4 py-3 capitalize">{{ str_replace('_', ' ', $app->application_type) }}</td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize text-gray-800">{{ str_replace('_', ' ', $app->status) }}</span>
+                                </td>
+                                <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $app->created_at->format('M j, Y') }}</td>
+                                <td class="px-4 py-3 text-right">
+                                    <a href="{{ route('tenant.applications.show', $app) }}" class="font-medium text-gmo-gold hover:underline">View</a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
     <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-2xl font-bold mb-4">Available Units</h2>
         <p class="text-gray-600 mb-6">Browse available rental units and submit an application.</p>

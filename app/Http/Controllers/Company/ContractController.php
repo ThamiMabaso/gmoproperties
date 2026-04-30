@@ -23,7 +23,9 @@ class ContractController extends BaseCompanyController
         $this->ensureCompanyAccess($company);
         $this->checkPermission('view_contracts');
 
-        $query = $company->contracts()
+        $buildingIds = $this->managedBuildingIdsFor($company);
+
+        $query = $this->scopedContractsQuery($company, $buildingIds)
             ->with(['tenant', 'unit.building', 'application'])
             ->latest();
 
@@ -52,6 +54,14 @@ class ContractController extends BaseCompanyController
             abort(403, 'Unauthorized access to this contract.');
         }
 
+        $contract->loadMissing('unit.building');
+
+        if ($contract->unit === null || $contract->unit->building === null) {
+            abort(404, 'Contract unit or building not found.');
+        }
+
+        $this->ensureBuildingInScope($company, $contract->unit->building);
+
         $contract->load(['tenant', 'unit.building', 'application', 'documents']);
 
         return view('company.contracts.show', compact('company', 'contract'));
@@ -73,6 +83,14 @@ class ContractController extends BaseCompanyController
         if ($contract->company_id !== $company->id) {
             abort(403, 'Unauthorized access to this contract.');
         }
+
+        $contract->loadMissing('unit.building');
+
+        if ($contract->unit === null || $contract->unit->building === null) {
+            abort(404, 'Contract unit or building not found.');
+        }
+
+        $this->ensureBuildingInScope($company, $contract->unit->building);
 
         if ($contract->signed_by_company) {
             return back()->with('error', 'Contract already signed by company.');

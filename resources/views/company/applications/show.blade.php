@@ -99,7 +99,7 @@
         @endif
 
         <!-- Actions -->
-        @if($application->status === 'pending' || $application->status === 'under_review')
+        @if(($application->status === 'pending' || $application->status === 'under_review') && Auth::user()->can('approve_applications'))
         <div class="border-t pt-6 mt-6">
             <div class="flex space-x-4">
                 <form method="POST" action="{{ route('company.applications.approve', [$company, $application]) }}" class="inline">

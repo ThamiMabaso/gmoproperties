@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Company;
 
-use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\Contract;
 use App\Models\TenantApplication;
 use App\Models\User;
+use App\Support\DashboardChartData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-class TenantApplicationController extends Controller
+class TenantApplicationController extends BaseCompanyController
 {
     /**
      * Display a listing of tenant applications.
@@ -25,7 +26,9 @@ class TenantApplicationController extends Controller
     {
         $this->ensureCompanyAccess($company);
 
-        $query = $company->tenantApplications()
+        $buildingIds = $this->managedBuildingIdsFor($company);
+
+        $query = $this->scopedTenantApplicationsQuery($company, $buildingIds)
             ->with(['unit.building', 'reviewer'])
             ->latest();
 
@@ -43,6 +46,81 @@ class TenantApplicationController extends Controller
     }
 
     /**
+     * Paid invoice totals by month (last 6 months) — for dashboard-style charts.
+     *
+     * @return array<string, mixed>
+     */
+    protected function monthlyIncome(): array
+    {
+        $company = $this->resolveRouteCompany();
+        $buildingIds = $this->managedBuildingIdsFor($company);
+        $charts = DashboardChartData::forCompany($company, $buildingIds)['charts'];
+
+        return $charts['paidInvoiceLine'] ?? [];
+    }
+
+    /**
+     * Tenant applications grouped by status — for charts.
+     *
+     * @return array<string, mixed>
+     */
+    protected function tenantStatus(): array
+    {
+        $company = $this->resolveRouteCompany();
+        $buildingIds = $this->managedBuildingIdsFor($company);
+
+        $query = $this->scopedTenantApplicationsQuery($company, $buildingIds)
+            ->select('status', DB::raw('count(*) as c'))
+            ->groupBy('status');
+
+        $rows = $query->pluck('c', 'status');
+
+        $labels = [];
+        $values = [];
+
+        foreach ($rows as $status => $count) {
+            $labels[] = ucfirst(str_replace('_', ' ', (string) $status));
+            $values[] = (int) $count;
+        }
+
+        if ($labels === []) {
+            $labels = ['No applications'];
+            $values = [0];
+        }
+
+        return [
+            'type' => 'doughnut',
+            'title' => 'Applications by status',
+            'labels' => $labels,
+            'values' => $values,
+        ];
+    }
+
+    /**
+     * Company income trend (same series as monthly paid invoices) — alias for dashboards that expect this name.
+     *
+     * @return array<string, mixed>
+     */
+    protected function companyIncome(): array
+    {
+        return $this->monthlyIncome();
+    }
+
+    /**
+     * Company bound to the current `{company}` route segment.
+     */
+    private function resolveRouteCompany(): Company
+    {
+        $company = request()->route('company');
+
+        if (!$company instanceof Company) {
+            abort(500, 'Company context is required for chart data.');
+        }
+
+        return $company;
+    }
+
+    /**
      * Display the specified application.
      *
      * @param  \App\Models\Company  $company
@@ -56,6 +134,8 @@ class TenantApplicationController extends Controller
         if ($application->company_id !== $company->id) {
             abort(403, 'Unauthorized access to this application.');
         }
+
+        $this->ensureTenantApplicationInScope($company, $application);
 
         $application->load(['unit.building', 'company', 'documents', 'reviewer']);
 
@@ -78,6 +158,8 @@ class TenantApplicationController extends Controller
         if ($application->company_id !== $company->id) {
             abort(403, 'Unauthorized access to this application.');
         }
+
+        $this->ensureTenantApplicationInScope($company, $application);
 
         if ($application->status !== 'pending' && $application->status !== 'under_review') {
             return back()->with('error', 'Only pending or under review applications can be approved.');
@@ -149,6 +231,8 @@ class TenantApplicationController extends Controller
         if ($application->company_id !== $company->id) {
             abort(403, 'Unauthorized access to this application.');
         }
+
+        $this->ensureTenantApplicationInScope($company, $application);
 
         $validated = $request->validate([
             'rejection_reason' => 'required|string|max:1000',

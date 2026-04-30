@@ -25,7 +25,9 @@ class InvoiceController extends BaseCompanyController
         $this->ensureCompanyAccess($company);
         $this->checkPermission('view_invoices');
 
-        $query = $company->invoices()
+        $buildingIds = $this->managedBuildingIdsFor($company);
+
+        $query = $this->scopedInvoicesQuery($company, $buildingIds)
             ->with(['tenant', 'unit.building', 'contract'])
             ->latest();
 
@@ -50,9 +52,12 @@ class InvoiceController extends BaseCompanyController
      */
     public function create(Company $company)
     {
-        
+        $this->ensureCompanyAccess($company);
+        $this->checkPermission('create_invoices');
 
-        $contracts = $company->contracts()
+        $buildingIds = $this->managedBuildingIdsFor($company);
+
+        $contracts = $this->scopedContractsQuery($company, $buildingIds)
             ->where('status', 'active')
             ->with(['tenant', 'unit'])
             ->get();
@@ -69,7 +74,8 @@ class InvoiceController extends BaseCompanyController
      */
     public function store(Request $request, Company $company)
     {
-        
+        $this->ensureCompanyAccess($company);
+        $this->checkPermission('create_invoices');
 
         $validated = $request->validate([
             'contract_id' => 'required|exists:contracts,id',
@@ -86,6 +92,15 @@ class InvoiceController extends BaseCompanyController
 
         if ($contract->company_id !== $company->id) {
             abort(403, 'Unauthorized access to this contract.');
+        }
+
+        $contract->loadMissing('unit');
+        if ($contract->unit !== null) {
+            $this->ensureBuildingIdAllowedForScope(
+                $company,
+                (int) $contract->unit->building_id,
+                $this->managedBuildingIdsFor($company)
+            );
         }
 
         $totalAmount = $validated['subtotal'] + ($validated['tax_amount'] ?? 0);
@@ -124,11 +139,9 @@ class InvoiceController extends BaseCompanyController
      */
     public function show(Company $company, Invoice $invoice)
     {
-        
-
-        if ($invoice->company_id !== $company->id) {
-            abort(403, 'Unauthorized access to this invoice.');
-        }
+        $this->ensureCompanyAccess($company);
+        $this->checkPermission('view_invoices');
+        $this->ensureInvoiceInScope($company, $invoice);
 
         $invoice->load(['tenant', 'unit.building', 'contract', 'payments', 'documents']);
 
@@ -143,9 +156,12 @@ class InvoiceController extends BaseCompanyController
      */
     public function generateRentInvoices(Company $company)
     {
-        
+        $this->ensureCompanyAccess($company);
+        $this->checkPermission('create_invoices');
 
-        $activeContracts = $company->contracts()
+        $buildingIds = $this->managedBuildingIdsFor($company);
+
+        $activeContracts = $this->scopedContractsQuery($company, $buildingIds)
             ->where('status', 'active')
             ->with('unit')
             ->get();

@@ -28,9 +28,22 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
-        // Bind company route parameter to resolve by slug
-        Route::bind('company', function ($value) {
-            return \App\Models\Company::where('slug', $value)->firstOrFail();
+        // Bind {company} by slug (e.g. premium-properties) or numeric id (e.g. /1/dashboard).
+        // Use qualified columns / whereKey so queries stay valid if global scopes add joins (avoids "Column id is ambiguous").
+        Route::bind('company', function (string $value): \App\Models\Company {
+            $table = (new \App\Models\Company())->getTable();
+
+            $company = \App\Models\Company::query()->where($table . '.slug', $value)->first();
+
+            if ($company !== null) {
+                return $company;
+            }
+
+            if (ctype_digit($value)) {
+                return \App\Models\Company::query()->whereKey((int) $value)->firstOrFail();
+            }
+
+            abort(404);
         });
 
         $this->routes(function () {

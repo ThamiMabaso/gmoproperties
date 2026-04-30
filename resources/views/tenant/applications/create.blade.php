@@ -47,8 +47,8 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                    <input type="email" name="email" value="{{ old('email') }}" required class="w-full border-gray-300 rounded-md shadow-sm">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email (account)</label>
+                    <input type="email" name="email" value="{{ old('email', Auth::user()->email) }}" readonly required class="w-full border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-700 cursor-not-allowed" title="Uses your portal login email">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Phone *</label>

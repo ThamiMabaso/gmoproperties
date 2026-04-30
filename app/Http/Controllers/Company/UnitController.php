@@ -24,12 +24,20 @@ class UnitController extends BaseCompanyController
     {
         $this->ensureCompanyAccess($company);
 
-        $query = $company->units()
+        $buildingIds = $this->managedBuildingIdsFor($company);
+
+        $query = $this->scopedUnitsQuery($company, $buildingIds)
             ->with(['building', 'activeContract.tenant'])
             ->latest();
 
         if (request('building_id')) {
-            $query->where('building_id', request('building_id'));
+            $filterId = (int) request('building_id');
+
+            if (is_array($buildingIds) && $buildingIds !== [] && ! in_array($filterId, array_map('intval', $buildingIds), true)) {
+                abort(403, 'You cannot filter by a building outside your assignment.');
+            }
+
+            $query->where('building_id', $filterId);
         }
 
         if (request('status')) {
@@ -41,7 +49,7 @@ class UnitController extends BaseCompanyController
         }
 
         $units = $query->paginate(15);
-        $buildings = $company->buildings()->orderBy('name')->get();
+        $buildings = $this->scopedBuildingsQuery($company, $buildingIds)->orderBy('name')->get();
 
         return view('company.units.index', compact('company', 'units', 'buildings'));
     }
@@ -56,7 +64,9 @@ class UnitController extends BaseCompanyController
     {
         $this->ensureCompanyAccess($company);
 
-        $buildings = $company->buildings()
+        $buildingIds = $this->managedBuildingIdsFor($company);
+
+        $buildings = $this->scopedBuildingsQuery($company, $buildingIds)
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
@@ -90,6 +100,12 @@ class UnitController extends BaseCompanyController
             'is_active' => 'boolean',
         ]);
 
+        $this->ensureBuildingIdAllowedForScope(
+            $company,
+            (int) $validated['building_id'],
+            $this->managedBuildingIdsFor($company)
+        );
+
         $validated['company_id'] = $company->id;
 
         Unit::create($validated);
@@ -109,10 +125,7 @@ class UnitController extends BaseCompanyController
     public function show(Company $company, Unit $unit): View
     {
         $this->ensureCompanyAccess($company);
-
-        if ($unit->company_id !== $company->id) {
-            abort(403, 'Unauthorized access to this unit.');
-        }
+        $this->ensureUnitInScope($company, $unit);
 
         $unit->load([
             'building',
@@ -135,12 +148,11 @@ class UnitController extends BaseCompanyController
     public function edit(Company $company, Unit $unit): View
     {
         $this->ensureCompanyAccess($company);
+        $this->ensureUnitInScope($company, $unit);
 
-        if ($unit->company_id !== $company->id) {
-            abort(403, 'Unauthorized access to this unit.');
-        }
+        $buildingIds = $this->managedBuildingIdsFor($company);
 
-        $buildings = $company->buildings()
+        $buildings = $this->scopedBuildingsQuery($company, $buildingIds)
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
@@ -159,10 +171,7 @@ class UnitController extends BaseCompanyController
     public function update(Company $company, Unit $unit, Request $request): RedirectResponse
     {
         $this->ensureCompanyAccess($company);
-
-        if ($unit->company_id !== $company->id) {
-            abort(403, 'Unauthorized access to this unit.');
-        }
+        $this->ensureUnitInScope($company, $unit);
 
         $validated = $request->validate([
             'building_id' => 'required|exists:buildings,id,company_id,' . $company->id,
@@ -178,6 +187,12 @@ class UnitController extends BaseCompanyController
             'description' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
+
+        $this->ensureBuildingIdAllowedForScope(
+            $company,
+            (int) $validated['building_id'],
+            $this->managedBuildingIdsFor($company)
+        );
 
         $unit->update($validated);
 
@@ -196,10 +211,7 @@ class UnitController extends BaseCompanyController
     public function destroy(Company $company, Unit $unit): RedirectResponse
     {
         $this->ensureCompanyAccess($company);
-
-        if ($unit->company_id !== $company->id) {
-            abort(403, 'Unauthorized access to this unit.');
-        }
+        $this->ensureUnitInScope($company, $unit);
 
         // Check if unit has active contract
         if ($unit->activeContract) {

@@ -7,15 +7,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\User;
-use Illuminate\Http\Request;
+use App\Support\DashboardChartData;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
     /**
      * Display the service provider admin dashboard.
-     *
-     * @return \Illuminate\View\View
      */
     public function index(): \Illuminate\View\View
     {
@@ -38,12 +36,15 @@ class DashboardController extends Controller
             'enterprise' => Company::where('subscription_plan', 'enterprise')->where('is_active', true)->count(),
         ];
 
-        // Financial overview (platform revenue)
+        // Financial overview (platform revenue — completed payments by payment_date)
         $financialOverview = [
-            'total_revenue' => DB::table('payments')->sum('amount'),
-            'monthly_revenue' => DB::table('payments')
-                ->whereMonth('paid_at', now()->month)
-                ->whereYear('paid_at', now()->year)
+            'total_revenue' => (float) DB::table('payments')
+                ->where('status', 'completed')
+                ->sum('amount'),
+            'monthly_revenue' => (float) DB::table('payments')
+                ->where('status', 'completed')
+                ->whereMonth('payment_date', now()->month)
+                ->whereYear('payment_date', now()->year)
                 ->sum('amount'),
             'pending_payments' => DB::table('invoices')
                 ->where('status', 'pending')
@@ -78,6 +79,17 @@ class DashboardController extends Controller
             ->orderBy('subscription_expires_at')
             ->get();
 
+        $platformWide = [
+            'contracts' => DB::table('contracts')->count(),
+            'invoices' => DB::table('invoices')->count(),
+            'maintenance_open' => DB::table('maintenance_tickets')
+                ->whereIn('status', ['open', 'assigned', 'in_progress'])
+                ->count(),
+            'messages' => DB::table('messages')->count(),
+        ];
+
+        $chartData = DashboardChartData::forAdmin();
+
         return view('admin.dashboard', compact(
             'stats',
             'subscriptionStats',
@@ -85,7 +97,9 @@ class DashboardController extends Controller
             'revenueByPlan',
             'recentCompanies',
             'pendingCompanies',
-            'expiringSoon'
+            'expiringSoon',
+            'platformWide',
+            'chartData'
         ));
     }
 }

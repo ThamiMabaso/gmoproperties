@@ -24,6 +24,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $fillable = [
         'company_id',
+        'building_id',
         'name',
         'email',
         'password',
@@ -65,6 +66,14 @@ class User extends Authenticatable implements MustVerifyEmail
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
+    }
+
+    /**
+     * Building this property manager is assigned to (company admins typically leave null = all buildings).
+     */
+    public function building(): BelongsTo
+    {
+        return $this->belongsTo(Building::class);
     }
 
     /**
@@ -169,6 +178,30 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isTenant(): bool
     {
         return $this->type === 'tenant';
+    }
+
+    /**
+     * Default portal dashboard URL (used after login and for "Portal" navigation).
+     */
+    public function portalDashboardUrl(): string
+    {
+        if ($this->isServiceProviderAdmin()) {
+            return route('admin.dashboard');
+        }
+
+        if ($this->isCompanyAdmin() || $this->isPropertyManager()) {
+            $company = $this->company;
+
+            if ($company !== null) {
+                return route('company.dashboard', $company);
+            }
+        }
+
+        if ($this->isTenant()) {
+            return route('tenant.dashboard');
+        }
+
+        return route('home');
     }
 
     /**

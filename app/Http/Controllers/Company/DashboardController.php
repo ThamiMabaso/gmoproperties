@@ -4,62 +4,56 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Company;
 
-use App\Http\Controllers\Company\BaseCompanyController;
-use App\Models\Building;
 use App\Models\Company;
-use App\Models\Contract;
-use App\Models\Invoice;
-use App\Models\MaintenanceTicket;
-use App\Models\Unit;
-use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Support\DashboardChartData;
 
 class DashboardController extends BaseCompanyController
 {
     /**
      * Display the company dashboard.
      *
-     * @param  \App\Models\Company  $company
      * @return \Illuminate\View\View
      */
     public function index(Company $company)
     {
         $this->ensureCompanyAccess($company);
-        $user = Auth::user();
+
+        $buildingIds = $this->managedBuildingIdsFor($company);
+
+        $unitsScope = $this->scopedUnitsQuery($company, $buildingIds);
 
         $stats = [
-            'total_buildings' => $company->buildings()->count(),
-            'total_units' => $company->units()->count(),
-            'occupied_units' => $company->units()->where('status', 'occupied')->count(),
-            'available_units' => $company->units()->where('status', 'available')->count(),
-            'total_tenants' => $company->users()->where('type', 'tenant')->count(),
-            'active_contracts' => $company->contracts()->where('status', 'active')->count(),
-            'pending_applications' => $company->tenantApplications()->where('status', 'pending')->count(),
-            'open_tickets' => $company->maintenanceTickets()->where('status', 'open')->count(),
-            'overdue_invoices' => $company->invoices()
+            'total_buildings' => $this->scopedBuildingsQuery($company, $buildingIds)->count(),
+            'total_units' => $unitsScope->count(),
+            'occupied_units' => (clone $unitsScope)->where('status', 'occupied')->count(),
+            'available_units' => (clone $unitsScope)->where('status', 'available')->count(),
+            'total_tenants' => $this->scopedTenantUserCount($company, $buildingIds),
+            'active_contracts' => $this->scopedContractsQuery($company, $buildingIds)->where('status', 'active')->count(),
+            'pending_applications' => $this->scopedTenantApplicationsQuery($company, $buildingIds)->where('status', 'pending')->count(),
+            'open_tickets' => $this->scopedMaintenanceTicketsQuery($company, $buildingIds)->where('status', 'open')->count(),
+            'overdue_invoices' => $this->scopedInvoicesQuery($company, $buildingIds)
                 ->where('status', 'overdue')
                 ->where('due_date', '<', now())
                 ->count(),
-            'monthly_revenue' => $company->invoices()
+            'monthly_revenue' => $this->scopedInvoicesQuery($company, $buildingIds)
                 ->where('status', 'paid')
                 ->whereMonth('paid_at', now()->month)
                 ->sum('total_amount'),
         ];
 
-        $recentApplications = $company->tenantApplications()
+        $recentApplications = $this->scopedTenantApplicationsQuery($company, $buildingIds)
             ->with('unit')
             ->latest()
             ->take(5)
             ->get();
 
-        $recentTickets = $company->maintenanceTickets()
+        $recentTickets = $this->scopedMaintenanceTicketsQuery($company, $buildingIds)
             ->with(['unit', 'tenant'])
             ->latest()
             ->take(5)
             ->get();
 
-        $upcomingRenewals = $company->contracts()
+        $upcomingRenewals = $this->scopedContractsQuery($company, $buildingIds)
             ->where('status', 'active')
             ->whereBetween('end_date', [now(), now()->addDays(30)])
             ->with(['tenant', 'unit'])
@@ -67,6 +61,21 @@ class DashboardController extends BaseCompanyController
             ->take(5)
             ->get();
 
-        return view('company.dashboard', compact('company', 'stats', 'recentApplications', 'recentTickets', 'upcomingRenewals'));
+        $recentInvoices = $this->scopedInvoicesQuery($company, $buildingIds)
+            ->latest()
+            ->take(5)
+            ->get();
+
+        $chartData = DashboardChartData::forCompany($company, $buildingIds);
+
+        return view('company.dashboard', compact(
+            'company',
+            'stats',
+            'recentApplications',
+            'recentTickets',
+            'upcomingRenewals',
+            'recentInvoices',
+            'chartData'
+        ));
     }
 }

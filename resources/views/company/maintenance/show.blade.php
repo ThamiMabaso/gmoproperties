@@ -65,14 +65,24 @@
         <div class="mb-6">
             <h3 class="font-semibold mb-4">Assignment</h3>
             @if(!$ticket->assigned_to)
-                <form method="POST" action="{{ route('company.maintenance.assign', [$company, $ticket]) }}" class="flex items-end space-x-4">
+                @if($availableAssignees->isEmpty())
+                    <p class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                        No eligible assignees for <strong>{{ $ticket->unit->building->name ?? 'this building' }}</strong>.
+                        @if(Auth::user()->isCompanyAdmin())
+                            Add a property manager under <a href="{{ route('company.users.index', $company) }}" class="font-medium underline text-amber-900">Team &amp; users</a> and assign them to this building, or assign the ticket to a company administrator.
+                        @else
+                            Ask a company administrator to assign a property manager to this building in Team &amp; users.
+                        @endif
+                    </p>
+                @else
+                <form method="POST" action="{{ route('company.maintenance.assign', [$company, $ticket]) }}" class="flex flex-wrap items-end gap-4">
                     @csrf
-                    <div class="flex-1">
+                    <div class="flex-1 min-w-[12rem]">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Assign To</label>
                         <select name="assigned_to" required class="w-full border-gray-300 rounded-md shadow-sm">
                             <option value="">Select a user...</option>
                             @foreach($availableAssignees as $assignee)
-                                <option value="{{ $assignee->id }}">{{ $assignee->name }}</option>
+                                <option value="{{ $assignee->id }}">{{ $assignee->name }}{{ $assignee->isCompanyAdmin() ? ' (Admin)' : '' }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -80,6 +90,7 @@
                         Assign
                     </button>
                 </form>
+                @endif
             @else
                 <div class="bg-gray-50 rounded-lg p-4">
                     <p class="text-sm"><span class="text-gray-600">Assigned To:</span> <span class="font-semibold">{{ $ticket->assignedUser->name }}</span></p>

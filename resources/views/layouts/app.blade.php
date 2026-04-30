@@ -14,21 +14,18 @@
     <!-- Styles -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="font-sans antialiased bg-white text-black">
+<body class="font-sans antialiased bg-white text-black min-h-screen flex flex-col">
     <!-- Navigation -->
     <nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <!-- Logo -->
                 <div class="flex items-center">
-                    <a href="{{ route('home') }}" class="flex items-center space-x-2">
-                        <div class="w-12 h-12 bg-gmo-gold flex items-center justify-center">
-                            <span class="text-black font-bold text-xl">gmo</span>
+                    <a href="{{ route('home') }}" class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-gmo-gold flex items-center justify-center shrink-0">
+                            <span class="text-white font-bold text-lg lowercase tracking-tight">gmo</span>
                         </div>
-                        <div class="flex flex-col">
-                            <span class="text-black font-bold text-sm">gmo</span>
-                            <span class="text-black text-xs">properties</span>
-                        </div>
+                        <span class="text-black font-semibold text-sm lowercase tracking-tight">gmo properties</span>
                     </a>
                 </div>
 
@@ -38,9 +35,7 @@
                     <a href="{{ route('about') }}" class="text-black hover:text-gmo-gold transition-colors {{ request()->routeIs('about') ? 'text-gmo-gold font-semibold' : '' }}">About</a>
                     <a href="{{ route('project') }}" class="text-black hover:text-gmo-gold transition-colors {{ request()->routeIs('project') ? 'text-gmo-gold font-semibold' : '' }}">Project</a>
                     <a href="{{ route('contact') }}" class="text-black hover:text-gmo-gold transition-colors {{ request()->routeIs('contact') ? 'text-gmo-gold font-semibold' : '' }}">Contact</a>
-                    <a href="{{ route('login') }}" class="px-4 py-2 bg-gmo-gold text-black rounded-md hover:bg-opacity-90 transition-colors font-semibold">
-                        Portal Login
-                    </a>
+                    @include('partials.portal-entry', ['variant' => 'desktop'])
                 </div>
 
                 <!-- Mobile menu button -->
@@ -61,15 +56,13 @@
                 <a href="{{ route('about') }}" class="block px-3 py-2 text-black hover:text-gmo-gold {{ request()->routeIs('about') ? 'text-gmo-gold font-semibold' : '' }}">About</a>
                 <a href="{{ route('project') }}" class="block px-3 py-2 text-black hover:text-gmo-gold {{ request()->routeIs('project') ? 'text-gmo-gold font-semibold' : '' }}">Project</a>
                 <a href="{{ route('contact') }}" class="block px-3 py-2 text-black hover:text-gmo-gold {{ request()->routeIs('contact') ? 'text-gmo-gold font-semibold' : '' }}">Contact</a>
-                <a href="{{ route('login') }}" class="block px-3 py-2 bg-gmo-gold text-black rounded-md hover:bg-opacity-90 font-semibold text-center mt-2">
-                    Portal Login
-                </a>
+                @include('partials.portal-entry', ['variant' => 'mobile'])
             </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main>
+    <main class="flex-1 flex flex-col w-full">
         @yield('content')
     </main>
 
@@ -78,14 +71,11 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="mb-4 md:mb-0">
-                    <a href="{{ route('home') }}" class="flex items-center space-x-2">
-                        <div class="w-12 h-12 bg-gmo-gold flex items-center justify-center">
-                            <span class="text-black font-bold text-xl">gmo</span>
+                    <a href="{{ route('home') }}" class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-gmo-gold flex items-center justify-center shrink-0">
+                            <span class="text-white font-bold text-lg lowercase tracking-tight">gmo</span>
                         </div>
-                        <div class="flex flex-col">
-                            <span class="text-white font-bold text-sm">gmo</span>
-                            <span class="text-white text-xs">properties</span>
-                        </div>
+                        <span class="text-white font-semibold text-sm lowercase tracking-tight">gmo properties</span>
                     </a>
                 </div>
                 <div class="text-sm">

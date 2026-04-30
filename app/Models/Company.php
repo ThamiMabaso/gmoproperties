@@ -44,6 +44,14 @@ class Company extends Model
     ];
 
     /**
+     * Use slug in URLs for route parameter {company}.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
+    /**
      * Get all users for this company.
      */
     public function users(): HasMany

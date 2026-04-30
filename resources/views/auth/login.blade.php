@@ -3,68 +3,119 @@
 @section('title', 'Login')
 
 @section('content')
-<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full space-y-8">
-        <div>
-            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
-        </div>
-        <form class="mt-8 space-y-6" method="POST" action="{{ route('login') }}">
+<div class="flex-1 flex flex-col justify-center py-10 sm:py-12 px-4 sm:px-6 lg:px-8 bg-white">
+    <div class="gmo-login-shell">
+        <h1 class="text-center text-lg sm:text-xl font-medium text-black mb-7">
+            Sign in to your account
+        </h1>
+
+        <form class="space-y-5" method="POST" action="{{ route('login') }}">
             @csrf
-            
+
             @if ($errors->any())
-                <div class="rounded-md bg-red-50 p-4">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <h3 class="text-sm font-medium text-red-800">
-                                There were errors with your submission
-                            </h3>
-                            <div class="mt-2 text-sm text-red-700">
-                                <ul class="list-disc pl-5 space-y-1">
-                                    @foreach ($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
+                <div class="rounded-lg bg-red-50 border border-red-100 p-4" role="alert">
+                    <p class="text-sm font-medium text-red-800 mb-2">We could not sign you in</p>
+                    <ul class="text-sm text-red-700 list-disc pl-5 space-y-1">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
 
-            <div class="rounded-md shadow-sm -space-y-px">
+            <div class="space-y-4">
                 <div>
-                    <label for="email" class="sr-only">Email address</label>
-                    <input id="email" name="email" type="email" autocomplete="email" required class="appearance-none rounded-none relative block w-full px-3 py-2 border {{ $errors->has('email') ? 'border-red-300' : 'border-gray-300' }} placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-gmo-gold focus:border-gmo-gold focus:z-10 sm:text-sm" placeholder="Email address" value="{{ old('email') }}">
+                    <label for="email" class="block text-sm font-medium text-black mb-1.5">Email address</label>
+                    <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        autocomplete="email"
+                        required
+                        value="{{ old('email') }}"
+                        class="gmo-login-input block w-full rounded-lg px-3 py-2.5 text-black placeholder-gray-400 text-sm shadow-sm"
+                        placeholder="you@example.com"
+                    >
                     @error('email')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
+
                 <div>
-                    <label for="password" class="sr-only">Password</label>
-                    <input id="password" name="password" type="password" autocomplete="current-password" required class="appearance-none rounded-none relative block w-full px-3 py-2 border {{ $errors->has('password') ? 'border-red-300' : 'border-gray-300' }} placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-gmo-gold focus:border-gmo-gold focus:z-10 sm:text-sm" placeholder="Password">
+                    <label for="password" class="block text-sm font-medium text-black mb-1.5">Password</label>
+                    <input
+                        id="password"
+                        name="password"
+                        type="password"
+                        autocomplete="current-password"
+                        required
+                        class="gmo-login-input block w-full rounded-lg px-3 py-2.5 text-black placeholder-gray-400 text-sm shadow-sm"
+                        placeholder="••••••••"
+                    >
                     @error('password')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
             </div>
 
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <input id="remember" name="remember" type="checkbox" class="h-4 w-4 text-gmo-gold focus:ring-gmo-gold border-gray-300 rounded">
-                    <label for="remember" class="ml-2 block text-sm text-gray-900">Remember me</label>
-                </div>
+            <div class="flex items-center pt-0.5">
+                <input
+                    id="remember"
+                    name="remember"
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-gray-300 text-gmo-gold focus:ring-gmo-gold"
+                >
+                <label for="remember" class="ml-2.5 block text-sm text-gray-800">Remember me</label>
             </div>
 
-            <div>
-                <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-black bg-gmo-gold hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gmo-gold">
-                    Sign in
-                </button>
-            </div>
+            <button
+                type="submit"
+                class="w-full rounded-full bg-gmo-gold py-3 text-sm font-semibold text-black shadow-sm hover:bg-opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gmo-gold transition-colors"
+            >
+                Sign in
+            </button>
         </form>
+
+        @if (!empty($demoAccounts))
+            <div class="mt-11 rounded-xl border border-gray-200 bg-gray-50/80 shadow-sm overflow-hidden">
+                <div class="bg-white px-4 py-3.5 border-b border-gray-200 text-center">
+                    <h2 class="text-sm font-semibold text-black">Local test accounts</h2>
+                    <p class="text-xs text-gray-600 mt-1.5">
+                        Password for all: <span class="font-mono text-black">password</span><span class="text-gray-500"> — click a row to fill the form</span>
+                    </p>
+                </div>
+                <ul class="divide-y divide-gray-100" id="demo-account-list">
+                    @foreach ($demoAccounts as $account)
+                        <li>
+                            <button
+                                type="button"
+                                class="demo-account-row w-full text-left px-4 py-3 text-sm transition-colors hover:bg-gmo-gold/5 focus:bg-gmo-gold/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gmo-gold/40"
+                                data-email="{{ $account['email'] }}"
+                                data-password="{{ $account['password'] }}"
+                            >
+                                <span class="font-medium text-black block">{{ $account['label'] }}</span>
+                                <span class="text-xs text-gray-600 leading-snug block mt-0.5">{{ $account['hint'] }}</span>
+                                <span class="text-xs font-mono text-gmo-black/80 mt-1 block">{{ $account['email'] }}</span>
+                            </button>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+
+            <script>
+                document.getElementById('demo-account-list')?.addEventListener('click', function (e) {
+                    const row = e.target.closest('.demo-account-row');
+                    if (!row) return;
+                    const email = document.getElementById('email');
+                    const password = document.getElementById('password');
+                    if (email && password) {
+                        email.value = row.dataset.email || '';
+                        password.value = row.dataset.password || '';
+                        email.focus();
+                    }
+                });
+            </script>
+        @endif
     </div>
 </div>
 @endsection

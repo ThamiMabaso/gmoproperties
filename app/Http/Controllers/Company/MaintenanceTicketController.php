@@ -10,24 +10,29 @@ use App\Models\MaintenanceTicket;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 
 class MaintenanceTicketController extends BaseCompanyController
 {
     /**
      * Display a listing of maintenance tickets.
      *
-     * @param  \App\Models\Company  $company
      * @return \Illuminate\View\View
      */
-    public function index(Company $company)
+    public function index(Request $request, Company $company)
     {
-        
+        $this->ensureCompanyAccess($company);
 
-        $tickets = $company->maintenanceTickets()
+        $buildingIds = $this->managedBuildingIdsFor($company);
+
+        $tickets = $this->scopedMaintenanceTicketsQuery($company, $buildingIds)
             ->with(['tenant', 'unit.building', 'assignedUser'])
+            ->when($request->filled('status'), function ($query) use ($request) {
+                $query->where('status', $request->input('status'));
+            })
+            ->when($request->filled('priority'), function ($query) use ($request) {
+                $query->where('priority', $request->input('priority'));
+            })
             ->latest()
-            ->filter(request(['status', 'priority']))
             ->paginate(15);
 
         return view('company.maintenance.index', compact('company', 'tickets'));
@@ -42,17 +47,12 @@ class MaintenanceTicketController extends BaseCompanyController
      */
     public function show(Company $company, MaintenanceTicket $ticket)
     {
-        
-
-        if ($ticket->company_id !== $company->id) {
-            abort(403, 'Unauthorized access to this ticket.');
-        }
+        $this->ensureCompanyAccess($company);
+        $this->ensureMaintenanceTicketInScope($company, $ticket);
 
         $ticket->load(['tenant', 'unit.building', 'assignedUser', 'assigner', 'expense']);
 
-        $availableAssignees = $company->users()
-            ->whereIn('type', ['property_manager', 'company_admin'])
-            ->get();
+        $availableAssignees = $this->maintenanceTicketAssigneeCandidates($company, $ticket);
 
         return view('company.maintenance.show', compact('company', 'ticket', 'availableAssignees'));
     }
@@ -67,11 +67,8 @@ class MaintenanceTicketController extends BaseCompanyController
      */
     public function assign(Request $request, Company $company, MaintenanceTicket $ticket)
     {
-        
-
-        if ($ticket->company_id !== $company->id) {
-            abort(403, 'Unauthorized access to this ticket.');
-        }
+        $this->ensureCompanyAccess($company);
+        $this->ensureMaintenanceTicketInScope($company, $ticket);
 
         $validated = $request->validate([
             'assigned_to' => 'required|exists:users,id',
@@ -81,6 +78,12 @@ class MaintenanceTicketController extends BaseCompanyController
 
         if ($assignee->company_id !== $company->id) {
             abort(403, 'Cannot assign to user from different company.');
+        }
+
+        $candidates = $this->maintenanceTicketAssigneeCandidates($company, $ticket);
+
+        if (! $candidates->contains('id', (int) $assignee->id)) {
+            abort(403, 'This user cannot be assigned to this ticket for this building.');
         }
 
         $ticket->update([
@@ -105,11 +108,8 @@ class MaintenanceTicketController extends BaseCompanyController
      */
     public function updateStatus(Request $request, Company $company, MaintenanceTicket $ticket)
     {
-        
-
-        if ($ticket->company_id !== $company->id) {
-            abort(403, 'Unauthorized access to this ticket.');
-        }
+        $this->ensureCompanyAccess($company);
+        $this->ensureMaintenanceTicketInScope($company, $ticket);
 
         $validated = $request->validate([
             'status' => ['required', 'in:open,assigned,in_progress,completed,cancelled'],

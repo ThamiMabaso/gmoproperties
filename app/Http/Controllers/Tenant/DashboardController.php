@@ -5,10 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
-use App\Models\Contract;
-use App\Models\Invoice;
-use App\Models\MaintenanceTicket;
-use Illuminate\Http\Request;
+use App\Support\DashboardChartData;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -60,6 +57,17 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        return view('tenant.dashboard', compact('user', 'activeContract', 'unit', 'stats', 'recentInvoices', 'recentPayments', 'recentTickets'));
+        $chartData = DashboardChartData::forTenant($user);
+
+        return view('tenant.dashboard', compact(
+            'user',
+            'activeContract',
+            'unit',
+            'stats',
+            'recentInvoices',
+            'recentPayments',
+            'recentTickets',
+            'chartData'
+        ));
     }
 }

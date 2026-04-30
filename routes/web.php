@@ -1,34 +1,37 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AboutController;
-use App\Http\Controllers\ProjectController;
-use App\Http\Controllers\VisionController;
-use App\Http\Controllers\ObjectiveController;
-use App\Http\Controllers\PortfolioController;
-use App\Http\Controllers\TeamController;
-use App\Http\Controllers\ContactController;
-use App\Http\Controllers\ThankYouController;
+use App\Http\Controllers\Admin\CompanyController as AdminCompanyController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
-use App\Http\Controllers\Admin\CompanyController as AdminCompanyController;
-use App\Http\Controllers\Company\DashboardController as CompanyDashboardController;
-use App\Http\Controllers\Company\TenantApplicationController;
+use App\Http\Controllers\Company\BuildingController;
+use App\Http\Controllers\Company\CompanyController as CompanySettingsController;
+use App\Http\Controllers\Company\CompanyUserController;
 use App\Http\Controllers\Company\ContractController;
+use App\Http\Controllers\Company\DashboardController as CompanyDashboardController;
+use App\Http\Controllers\Company\FinancialReportController;
 use App\Http\Controllers\Company\InvoiceController;
 use App\Http\Controllers\Company\MaintenanceTicketController;
-use App\Http\Controllers\Company\FinancialReportController;
-use App\Http\Controllers\Company\BuildingController;
-use App\Http\Controllers\Company\UnitController;
 use App\Http\Controllers\Company\MessageController as CompanyMessageController;
-use App\Http\Controllers\Tenant\MessageController as TenantMessageController;
-use App\Http\Controllers\Tenant\DashboardController as TenantDashboardController;
+use App\Http\Controllers\Company\TenantApplicationController;
+use App\Http\Controllers\Company\UnitController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ObjectiveController;
+use App\Http\Controllers\PortfolioController;
+use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\TeamController;
 use App\Http\Controllers\Tenant\ApplicationController as TenantApplicationControllerAlias;
 use App\Http\Controllers\Tenant\ContractController as TenantContractController;
+use App\Http\Controllers\Tenant\DashboardController as TenantDashboardController;
 use App\Http\Controllers\Tenant\InvoiceController as TenantInvoiceController;
 use App\Http\Controllers\Tenant\MaintenanceTicketController as TenantMaintenanceTicketController;
+use App\Http\Controllers\Tenant\MessageController as TenantMessageController;
+use App\Http\Controllers\ThankYouController;
+use App\Http\Controllers\VisionController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,6 +49,10 @@ Route::get('/team', [TeamController::class, 'index'])->name('team');
 Route::get('/contact', [ContactController::class, 'index'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 Route::get('/thank-you', [ThankYouController::class, 'index'])->name('thank-you');
+
+// Friendly aliases (bookmark / MCP — portal login is the same as /login)
+Route::redirect('/portal', '/login', 302);
+Route::redirect('/portal/login', '/login', 302);
 
 /*
 |--------------------------------------------------------------------------
@@ -69,6 +76,16 @@ Route::middleware('auth')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| Platform search (service provider admin — uses real Company/Building/Unit/User tables)
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/search', [SearchController::class, 'search'])
+    ->middleware(['auth', 'role:service_provider_admin'])
+    ->name('search');
+
+/*
+|--------------------------------------------------------------------------
 | Service Provider Admin Routes
 |--------------------------------------------------------------------------
 */
@@ -80,56 +97,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:service_provid
 
 /*
 |--------------------------------------------------------------------------
-| Client Admin Portal Routes (Property Company)
-|--------------------------------------------------------------------------
-*/
-
-Route::prefix('{company}')->name('company.')->middleware(['auth', 'company', 'role:company_admin|property_manager'])->group(function () {
-    Route::get('/dashboard', [CompanyDashboardController::class, 'index'])->name('dashboard');
-
-    // Buildings & Units
-    Route::resource('buildings', BuildingController::class);
-    Route::resource('units', UnitController::class);
-
-    // Tenant Applications
-    Route::get('/applications', [TenantApplicationController::class, 'index'])->name('applications.index');
-    Route::get('/applications/{application}', [TenantApplicationController::class, 'show'])->name('applications.show');
-    Route::post('/applications/{application}/approve', [TenantApplicationController::class, 'approve'])->name('applications.approve');
-    Route::post('/applications/{application}/reject', [TenantApplicationController::class, 'reject'])->name('applications.reject');
-
-    // Contracts
-    Route::get('/contracts', [ContractController::class, 'index'])->name('contracts.index');
-    Route::get('/contracts/{contract}', [ContractController::class, 'show'])->name('contracts.show');
-    Route::post('/contracts/{contract}/sign', [ContractController::class, 'signAsCompany'])->name('contracts.sign');
-
-    // Invoices
-    Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
-    Route::get('/invoices/create', [InvoiceController::class, 'create'])->name('invoices.create');
-    Route::post('/invoices', [InvoiceController::class, 'store'])->name('invoices.store');
-    Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
-    Route::post('/invoices/generate-rent', [InvoiceController::class, 'generateRentInvoices'])->name('invoices.generate-rent');
-
-    // Maintenance Tickets
-    Route::get('/maintenance', [MaintenanceTicketController::class, 'index'])->name('maintenance.index');
-    Route::get('/maintenance/{ticket}', [MaintenanceTicketController::class, 'show'])->name('maintenance.show');
-    Route::post('/maintenance/{ticket}/assign', [MaintenanceTicketController::class, 'assign'])->name('maintenance.assign');
-    Route::post('/maintenance/{ticket}/status', [MaintenanceTicketController::class, 'updateStatus'])->name('maintenance.update-status');
-
-    // Financial Reports
-    Route::get('/financial', [FinancialReportController::class, 'index'])->name('financial.index');
-
-    // Messages
-    Route::get('/messages', [CompanyMessageController::class, 'index'])->name('messages.index');
-    Route::get('/messages/create', [CompanyMessageController::class, 'create'])->name('messages.create');
-    Route::post('/messages', [CompanyMessageController::class, 'store'])->name('messages.store');
-    Route::get('/messages/{message}', [CompanyMessageController::class, 'show'])->name('messages.show');
-    Route::post('/messages/{message}/read', [CompanyMessageController::class, 'markAsRead'])->name('messages.read');
-    Route::delete('/messages/{message}', [CompanyMessageController::class, 'destroy'])->name('messages.destroy');
-});
-
-/*
-|--------------------------------------------------------------------------
-| Tenant Portal Routes
+| Tenant Portal Routes (must be registered BEFORE {company} so /tenant/* is not captured as a company slug)
 |--------------------------------------------------------------------------
 */
 
@@ -165,3 +133,65 @@ Route::prefix('tenant')->name('tenant.')->middleware(['auth', 'role:tenant'])->g
     Route::post('/messages/{message}/read', [TenantMessageController::class, 'markAsRead'])->name('messages.read');
     Route::delete('/messages/{message}', [TenantMessageController::class, 'destroy'])->name('messages.destroy');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Client Admin Portal Routes (Property Company)
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('{company}')
+    ->where(['company' => '^(?!tenant$|admin$|login$|register$|api$)[\w\-]+$'])
+    ->name('company.')
+    ->middleware(['auth', 'company', 'role:company_admin|property_manager'])
+    ->group(function () {
+        Route::get('/dashboard', [CompanyDashboardController::class, 'index'])->name('dashboard');
+
+        // Company profile (company admins only — enforced in controller)
+        Route::get('/settings', [CompanySettingsController::class, 'edit'])->name('settings.edit');
+        Route::put('/settings', [CompanySettingsController::class, 'update'])->name('settings.update');
+
+        // Team & users (company admins only — enforced in controller)
+        Route::get('/users', [CompanyUserController::class, 'index'])->name('users.index');
+        Route::post('/users/managers', [CompanyUserController::class, 'storeManager'])->name('users.managers.store');
+        Route::patch('/users/{user}', [CompanyUserController::class, 'update'])->name('users.update');
+
+        // Buildings & Units
+        Route::resource('buildings', BuildingController::class);
+        Route::resource('units', UnitController::class);
+
+        // Tenant Applications
+        Route::get('/applications', [TenantApplicationController::class, 'index'])->name('applications.index');
+        Route::get('/applications/{application}', [TenantApplicationController::class, 'show'])->name('applications.show');
+        Route::post('/applications/{application}/approve', [TenantApplicationController::class, 'approve'])->name('applications.approve');
+        Route::post('/applications/{application}/reject', [TenantApplicationController::class, 'reject'])->name('applications.reject');
+
+        // Contracts
+        Route::get('/contracts', [ContractController::class, 'index'])->name('contracts.index');
+        Route::get('/contracts/{contract}', [ContractController::class, 'show'])->name('contracts.show');
+        Route::post('/contracts/{contract}/sign', [ContractController::class, 'signAsCompany'])->name('contracts.sign');
+
+        // Invoices
+        Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
+        Route::get('/invoices/create', [InvoiceController::class, 'create'])->name('invoices.create');
+        Route::post('/invoices', [InvoiceController::class, 'store'])->name('invoices.store');
+        Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
+        Route::post('/invoices/generate-rent', [InvoiceController::class, 'generateRentInvoices'])->name('invoices.generate-rent');
+
+        // Maintenance Tickets
+        Route::get('/maintenance', [MaintenanceTicketController::class, 'index'])->name('maintenance.index');
+        Route::get('/maintenance/{ticket}', [MaintenanceTicketController::class, 'show'])->name('maintenance.show');
+        Route::post('/maintenance/{ticket}/assign', [MaintenanceTicketController::class, 'assign'])->name('maintenance.assign');
+        Route::post('/maintenance/{ticket}/status', [MaintenanceTicketController::class, 'updateStatus'])->name('maintenance.update-status');
+
+        // Financial Reports
+        Route::get('/financial', [FinancialReportController::class, 'index'])->name('financial.index');
+
+        // Messages
+        Route::get('/messages', [CompanyMessageController::class, 'index'])->name('messages.index');
+        Route::get('/messages/create', [CompanyMessageController::class, 'create'])->name('messages.create');
+        Route::post('/messages', [CompanyMessageController::class, 'store'])->name('messages.store');
+        Route::get('/messages/{message}', [CompanyMessageController::class, 'show'])->name('messages.show');
+        Route::post('/messages/{message}/read', [CompanyMessageController::class, 'markAsRead'])->name('messages.read');
+        Route::delete('/messages/{message}', [CompanyMessageController::class, 'destroy'])->name('messages.destroy');
+    });

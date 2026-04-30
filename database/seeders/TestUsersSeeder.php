@@ -10,7 +10,6 @@ use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class TestUsersSeeder extends Seeder
 {
@@ -103,12 +102,12 @@ class TestUsersSeeder extends Seeder
                 [
                     'company_id' => $company1->id,
                     'building_id' => $building1->id,
-                    'unit_number' => 'A' . str_pad((string)$i, 2, '0', STR_PAD_LEFT),
+                    'unit_number' => 'A'.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
                 ],
                 [
                     'company_id' => $company1->id,
                     'building_id' => $building1->id,
-                    'unit_number' => 'A' . str_pad((string)$i, 2, '0', STR_PAD_LEFT),
+                    'unit_number' => 'A'.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
                     'unit_type' => $i <= 2 ? 'one_bedroom' : 'two_bedroom',
                     'monthly_rent' => $i <= 2 ? 8500.00 : 12000.00,
                     'deposit' => $i <= 2 ? 8500.00 : 12000.00,
@@ -120,6 +119,8 @@ class TestUsersSeeder extends Seeder
                 ]
             );
         }
+
+        $company1Manager->update(['building_id' => $building1->id]);
 
         // Company 1 Tenant
         $tenant1 = User::firstOrCreate(
@@ -195,12 +196,12 @@ class TestUsersSeeder extends Seeder
                 [
                     'company_id' => $company2->id,
                     'building_id' => $building2->id,
-                    'unit_number' => 'R' . str_pad((string)$i, 3, '0', STR_PAD_LEFT),
+                    'unit_number' => 'R'.str_pad((string) $i, 3, '0', STR_PAD_LEFT),
                 ],
                 [
                     'company_id' => $company2->id,
                     'building_id' => $building2->id,
-                    'unit_number' => 'R' . str_pad((string)$i, 3, '0', STR_PAD_LEFT),
+                    'unit_number' => 'R'.str_pad((string) $i, 3, '0', STR_PAD_LEFT),
                     'unit_type' => 'shared',
                     'monthly_rent' => 3500.00,
                     'deposit' => 3500.00,
@@ -231,6 +232,82 @@ class TestUsersSeeder extends Seeder
             ]
         );
         $tenant2->assignRole('tenant');
+
+        // Short @test.com accounts (password: password) — all portal sections for local QA
+        $testPass = Hash::make('password');
+
+        $adminTest = User::firstOrCreate(
+            ['email' => 'admin@test.com'],
+            [
+                'name' => 'Test Platform Admin',
+                'email' => 'admin@test.com',
+                'password' => $testPass,
+                'type' => 'service_provider_admin',
+                'is_active' => true,
+            ]
+        );
+        $adminTest->syncRoles(['service_provider_admin']);
+
+        $companyTest = User::firstOrCreate(
+            ['email' => 'company@test.com'],
+            [
+                'company_id' => $company1->id,
+                'name' => 'Test Company Admin',
+                'email' => 'company@test.com',
+                'password' => $testPass,
+                'type' => 'company_admin',
+                'is_active' => true,
+            ]
+        );
+        $companyTest->syncRoles(['company_admin']);
+
+        $managerTest = User::firstOrCreate(
+            ['email' => 'manager@test.com'],
+            [
+                'company_id' => $company1->id,
+                'name' => 'Test Property Manager',
+                'email' => 'manager@test.com',
+                'password' => $testPass,
+                'type' => 'property_manager',
+                'is_active' => true,
+            ]
+        );
+        $managerTest->syncRoles(['property_manager']);
+        $managerTest->update(['building_id' => $building1->id]);
+
+        $tenantTest = User::firstOrCreate(
+            ['email' => 'tenant@test.com'],
+            [
+                'company_id' => $company1->id,
+                'name' => 'Test Tenant',
+                'email' => 'tenant@test.com',
+                'password' => $testPass,
+                'type' => 'tenant',
+                'phone' => '+27900000001',
+                'id_number' => '9001015800087',
+                'employment_type' => 'employed',
+                'is_active' => true,
+            ]
+        );
+        $tenantTest->syncRoles(['tenant']);
+
+        $studentTest = User::firstOrCreate(
+            ['email' => 'student@test.com'],
+            [
+                'company_id' => $company2->id,
+                'name' => 'Test Student Tenant',
+                'email' => 'student@test.com',
+                'password' => $testPass,
+                'type' => 'tenant',
+                'phone' => '+27900000002',
+                'id_number' => '0101015800087',
+                'student_number' => 'STU2024999',
+                'employment_type' => 'student',
+                'source_of_funding' => 'NSFAS',
+                'is_active' => true,
+            ]
+        );
+        $studentTest->syncRoles(['tenant']);
 
         $this->command->info('Test users and companies created successfully!');
         $this->command->info('');
@@ -264,6 +341,13 @@ class TestUsersSeeder extends Seeder
         $this->command->info('    Email: student@studenthousing.co.za');
         $this->command->info('    Password: tenant123');
         $this->command->info('    URL: /tenant/dashboard');
+        $this->command->info('');
+        $this->command->info('=== SHORT @test.com (password: password) ===');
+        $this->command->info('  admin@test.com       → Platform admin → /admin/dashboard');
+        $this->command->info('  company@test.com     → Company admin → /premium-properties/dashboard');
+        $this->command->info('  manager@test.com     → Property manager → /premium-properties/dashboard');
+        $this->command->info('  tenant@test.com      → Tenant → /tenant/dashboard');
+        $this->command->info('  student@test.com     → Tenant (Student Housing) → /tenant/dashboard');
         $this->command->info('');
     }
 }
