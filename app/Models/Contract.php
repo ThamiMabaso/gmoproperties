@@ -31,6 +31,7 @@ class Contract extends Model
         'monthly_rent',
         'deposit',
         'terms',
+        'terms_text',
         'status',
         'signed_at',
         'signed_document_path',

@@ -165,7 +165,7 @@ class TenantApplicationController extends BaseCompanyController
             return back()->with('error', 'Only pending or under review applications can be approved.');
         }
 
-        DB::transaction(function () use ($application, $request) {
+        DB::transaction(function () use ($application) {
             // Update application status
             $application->update([
                 'status' => 'approved',
@@ -173,21 +173,38 @@ class TenantApplicationController extends BaseCompanyController
                 'reviewed_at' => now(),
             ]);
 
-            // Create tenant user account
-            $tenant = User::create([
-                'company_id' => $application->company_id,
-                'name' => $application->first_name . ' ' . $application->last_name,
-                'email' => $application->email,
-                'phone' => $application->phone,
-                'type' => 'tenant',
-                'id_number' => $application->id_number,
-                'student_number' => $application->student_number,
-                'employment_type' => $application->employment_type,
-                'next_of_kin_details' => $application->next_of_kin_details,
-                'source_of_funding' => $application->source_of_funding,
-                'is_active' => true,
-                'password' => bcrypt(Str::random(12)), // Temporary password, will be reset
-            ]);
+            // Reuse existing user by email to avoid duplicate-account failures.
+            $tenant = User::query()->where('email', $application->email)->first();
+
+            if ($tenant === null) {
+                $tenant = User::create([
+                    'company_id' => $application->company_id,
+                    'name' => $application->first_name . ' ' . $application->last_name,
+                    'email' => $application->email,
+                    'phone' => $application->phone,
+                    'type' => 'tenant',
+                    'id_number' => $application->id_number,
+                    'student_number' => $application->student_number,
+                    'employment_type' => $application->employment_type,
+                    'next_of_kin_details' => $application->next_of_kin_details,
+                    'source_of_funding' => $application->source_of_funding,
+                    'is_active' => true,
+                    'password' => bcrypt(Str::random(12)), // Temporary password, will be reset
+                ]);
+            } else {
+                $tenant->update([
+                    'company_id' => $application->company_id,
+                    'name' => $application->first_name . ' ' . $application->last_name,
+                    'phone' => $application->phone,
+                    'type' => 'tenant',
+                    'id_number' => $application->id_number,
+                    'student_number' => $application->student_number,
+                    'employment_type' => $application->employment_type,
+                    'next_of_kin_details' => $application->next_of_kin_details,
+                    'source_of_funding' => $application->source_of_funding,
+                    'is_active' => true,
+                ]);
+            }
 
             $tenant->assignRole('tenant');
 
@@ -202,6 +219,7 @@ class TenantApplicationController extends BaseCompanyController
                 'end_date' => $application->lease_end_date,
                 'monthly_rent' => $application->unit->monthly_rent,
                 'deposit' => $application->unit->deposit,
+                'terms_text' => (string) ($application->company?->contract_template ?? ''),
                 'status' => 'pending_signature',
             ]);
 

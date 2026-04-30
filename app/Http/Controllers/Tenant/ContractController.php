@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Tenant;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Http\Controllers\Controller;
 use App\Models\Contract;
+use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 class ContractController extends Controller
 {
@@ -16,11 +20,11 @@ class ContractController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function index()
+    public function index(): View
     {
         $user = Auth::user();
 
-        if (!$user->isTenant()) {
+        if (! $user instanceof User || ! $user->isTenant()) {
             abort(403, 'Access denied. Tenant portal only.');
         }
 
@@ -38,11 +42,11 @@ class ContractController extends Controller
      * @param  \App\Models\Contract  $contract
      * @return \Illuminate\View\View
      */
-    public function show(Contract $contract)
+    public function show(Contract $contract): View
     {
         $user = Auth::user();
 
-        if (!$user->isTenant()) {
+        if (! $user instanceof User || ! $user->isTenant()) {
             abort(403, 'Access denied. Tenant portal only.');
         }
 
@@ -62,11 +66,11 @@ class ContractController extends Controller
      * @param  \App\Models\Contract  $contract
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function sign(Request $request, Contract $contract)
+    public function sign(Request $request, Contract $contract): RedirectResponse
     {
         $user = Auth::user();
 
-        if (!$user->isTenant()) {
+        if (! $user instanceof User || ! $user->isTenant()) {
             abort(403, 'Access denied. Tenant portal only.');
         }
 
@@ -97,5 +101,34 @@ class ContractController extends Controller
         }
 
         return back()->with('success', 'Contract signed successfully.');
+    }
+
+    /**
+     * Download contract PDF for tenant after tenant signature.
+     */
+    public function download(Contract $contract)
+    {
+        $user = Auth::user();
+
+        if (! $user instanceof User || ! $user->isTenant()) {
+            abort(403, 'Access denied. Tenant portal only.');
+        }
+
+        if ($contract->tenant_id !== $user->id) {
+            abort(403, 'Unauthorized access to this contract.');
+        }
+
+        if (! $contract->signed_by_tenant) {
+            abort(403, 'You can download the contract only after you sign it.');
+        }
+
+        $contract->load(['company', 'tenant', 'unit.building', 'tenantSigner', 'companySigner']);
+
+        $pdf = Pdf::loadView('contracts.pdf', [
+            'contract' => $contract,
+            'isTenantView' => true,
+        ]);
+
+        return $pdf->download($contract->contract_number . '.pdf');
     }
 }

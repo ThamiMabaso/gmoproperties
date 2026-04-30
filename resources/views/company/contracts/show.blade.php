@@ -11,7 +11,10 @@
                 <h2 class="text-2xl font-bold">Contract Details</h2>
                 <p class="text-gray-600">Contract #{{ $contract->contract_number }}</p>
             </div>
-            <div>
+            <div class="flex items-center gap-3">
+                <a href="{{ route('company.contracts.download', [$company, $contract]) }}" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                    Download PDF
+                </a>
                 @if($contract->status === 'active')
                     <span class="px-4 py-2 text-sm font-semibold rounded-full bg-green-100 text-green-800">Active</span>
                 @elseif($contract->status === 'pending_signature')
@@ -76,8 +79,15 @@
             </div>
         </div>
 
+        @if($contract->terms_text)
+            <div class="mb-6">
+                <h3 class="font-semibold mb-2">Contract Content</h3>
+                <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm whitespace-pre-wrap">{{ $contract->terms_text }}</div>
+            </div>
+        @endif
+
         <!-- Sign Contract as Company -->
-        @if($contract->status === 'pending_signature' && !$contract->signed_by_company)
+        @if($contract->status === 'pending_signature' && !$contract->signed_by_company && Auth::user()->can('sign_contracts'))
         <div class="border-t pt-6 mt-6">
             <form method="POST" action="{{ route('company.contracts.sign', [$company, $contract]) }}">
                 @csrf

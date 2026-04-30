@@ -11,7 +11,12 @@
                 <h2 class="text-2xl font-bold">Contract Details</h2>
                 <p class="text-gray-600">Contract #{{ $contract->contract_number }}</p>
             </div>
-            <div>
+            <div class="flex items-center gap-3">
+                @if($contract->signed_by_tenant)
+                    <a href="{{ route('tenant.contracts.download', $contract) }}" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                        Download PDF
+                    </a>
+                @endif
                 @if($contract->status === 'active')
                     <span class="px-4 py-2 text-sm font-semibold rounded-full bg-green-100 text-green-800">Active</span>
                 @elseif($contract->status === 'pending_signature')
@@ -50,7 +55,12 @@
                 <div>
                     <p class="text-sm text-gray-600 mb-1">Tenant Signature</p>
                     @if($contract->signed_by_tenant)
-                        <p class="text-sm font-semibold text-green-600">✓ Signed on {{ $contract->signed_at->format('M d, Y') }}</p>
+                        <p class="text-sm font-semibold text-green-600">
+                            ✓ Signed
+                            @if($contract->signed_at)
+                                on {{ $contract->signed_at->format('M d, Y') }}
+                            @endif
+                        </p>
                     @else
                         <p class="text-sm font-semibold text-yellow-600">Pending</p>
                     @endif
@@ -81,6 +91,13 @@
                     <p>{{ $contract->terms }}</p>
                 @endif
             </div>
+        </div>
+        @endif
+
+        @if($contract->terms_text)
+        <div class="mb-6">
+            <h3 class="font-semibold mb-2">Contract Content</h3>
+            <div class="bg-gray-50 rounded-lg p-4 text-sm whitespace-pre-wrap border border-gray-200">{{ $contract->terms_text }}</div>
         </div>
         @endif
 

@@ -143,6 +143,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view_tenants',
             'approve_applications',
             'view_contracts',
+            'sign_contracts',
             'view_invoices',
             'create_invoices',
             'view_payments',

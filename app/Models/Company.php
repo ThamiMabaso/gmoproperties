@@ -26,6 +26,8 @@ class Company extends Model
         'address',
         'registration_number',
         'vat_number',
+        'logo_path',
+        'contract_template',
         'subscription_plan',
         'feature_access',
         'is_active',

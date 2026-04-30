@@ -8,7 +8,7 @@
     <p class="text-sm text-gray-600 mb-6">Update your organisation’s contact details. Subscription and billing are managed by the platform administrator.</p>
 
     <div class="bg-white rounded-lg shadow p-6">
-        <form method="POST" action="{{ route('company.settings.update', $company) }}">
+        <form method="POST" action="{{ route('company.settings.update', $company) }}" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
@@ -49,6 +49,28 @@
                         <input type="text" name="vat_number" id="vat_number" value="{{ old('vat_number', $company->vat_number) }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gmo-gold focus:ring-gmo-gold">
                         @error('vat_number')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                     </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="logo" class="block text-sm font-medium text-gray-700">Company logo</label>
+                        <input type="file" name="logo" id="logo" accept="image/png,image/jpeg,image/webp" class="mt-1 block w-full text-sm text-gray-700">
+                        <p class="mt-1 text-xs text-gray-500">Used on contract PDFs. PNG/JPG/WEBP up to 4MB.</p>
+                        @error('logo')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        @if($company->logo_path)
+                            <p class="block text-sm font-medium text-gray-700 mb-1">Current logo</p>
+                            <img src="{{ Storage::url($company->logo_path) }}" alt="Company logo" class="h-16 w-auto rounded border border-gray-200 p-1 bg-white">
+                        @endif
+                    </div>
+                </div>
+
+                <div>
+                    <label for="contract_template" class="block text-sm font-medium text-gray-700">Default contract content</label>
+                    <textarea name="contract_template" id="contract_template" rows="8" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gmo-gold focus:ring-gmo-gold">{{ old('contract_template', $company->contract_template) }}</textarea>
+                    <p class="mt-1 text-xs text-gray-500">This content pre-fills new contracts and appears in generated contract PDFs.</p>
+                    @error('contract_template')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
             </div>
 

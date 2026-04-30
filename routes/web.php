@@ -113,6 +113,7 @@ Route::prefix('tenant')->name('tenant.')->middleware(['auth', 'role:tenant'])->g
     // Contracts
     Route::get('/contracts', [TenantContractController::class, 'index'])->name('contracts.index');
     Route::get('/contracts/{contract}', [TenantContractController::class, 'show'])->name('contracts.show');
+    Route::get('/contracts/{contract}/download', [TenantContractController::class, 'download'])->name('contracts.download');
     Route::post('/contracts/{contract}/sign', [TenantContractController::class, 'sign'])->name('contracts.sign');
 
     // Invoices
@@ -168,7 +169,10 @@ Route::prefix('{company}')
 
         // Contracts
         Route::get('/contracts', [ContractController::class, 'index'])->name('contracts.index');
+        Route::get('/contracts/create', [ContractController::class, 'create'])->name('contracts.create');
+        Route::post('/contracts', [ContractController::class, 'store'])->name('contracts.store');
         Route::get('/contracts/{contract}', [ContractController::class, 'show'])->name('contracts.show');
+        Route::get('/contracts/{contract}/download', [ContractController::class, 'download'])->name('contracts.download');
         Route::post('/contracts/{contract}/sign', [ContractController::class, 'signAsCompany'])->name('contracts.sign');
 
         // Invoices

@@ -8,6 +8,11 @@
     <div class="bg-white rounded-lg shadow p-6">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold">Contracts</h2>
+            @can('create_contracts')
+                <a href="{{ route('company.contracts.create', $company) }}" class="px-4 py-2 bg-gmo-gold text-black rounded-md hover:bg-opacity-90">
+                    Generate Contract
+                </a>
+            @endcan
         </div>
 
         <!-- Filters -->
@@ -66,7 +71,8 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <a href="{{ route('company.contracts.show', [$company, $contract]) }}" class="text-gmo-gold hover:underline">View</a>
+                                <a href="{{ route('company.contracts.show', [$company, $contract]) }}" class="text-gmo-gold hover:underline mr-3">View</a>
+                                <a href="{{ route('company.contracts.download', [$company, $contract]) }}" class="text-blue-600 hover:underline">PDF</a>
                             </td>
                         </tr>
                     @empty

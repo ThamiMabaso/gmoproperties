@@ -47,7 +47,10 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <a href="{{ route('tenant.contracts.show', $contract) }}" class="text-gmo-gold hover:underline">View</a>
+                                <a href="{{ route('tenant.contracts.show', $contract) }}" class="text-gmo-gold hover:underline mr-3">View</a>
+                                @if($contract->signed_by_tenant)
+                                    <a href="{{ route('tenant.contracts.download', $contract) }}" class="text-blue-600 hover:underline">PDF</a>
+                                @endif
                             </td>
                         </tr>
                     @empty

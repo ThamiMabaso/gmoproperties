@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Company;
 use App\Models\Company;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -46,6 +47,8 @@ class CompanyController extends BaseCompanyController
             'address' => 'nullable|string',
             'registration_number' => 'nullable|string|max:50',
             'vat_number' => 'nullable|string|max:50',
+            'contract_template' => 'nullable|string|max:10000',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
         ]);
 
         $payload = collect($validated)->only([
@@ -55,7 +58,16 @@ class CompanyController extends BaseCompanyController
             'address',
             'registration_number',
             'vat_number',
+            'contract_template',
         ])->all();
+
+        if ($request->hasFile('logo')) {
+            if ($company->logo_path) {
+                Storage::disk('public')->delete($company->logo_path);
+            }
+
+            $payload['logo_path'] = $request->file('logo')->store('company-logos', 'public');
+        }
 
         if ($validated['name'] !== $company->name) {
             $slug = Str::slug($validated['name']);
