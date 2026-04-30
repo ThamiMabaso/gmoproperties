@@ -132,4 +132,12 @@ class Company extends Model
     {
         return $this->hasMany(Document::class);
     }
+
+    /**
+     * Announcements published by the company.
+     */
+    public function announcements(): HasMany
+    {
+        return $this->hasMany(Announcement::class);
+    }
 }

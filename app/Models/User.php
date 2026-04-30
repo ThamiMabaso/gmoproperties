@@ -8,6 +8,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -146,6 +147,48 @@ class User extends Authenticatable implements MustVerifyEmail
     public function unreadMessagesCount(): int
     {
         return $this->receivedMessages()->where('is_read', false)->count();
+    }
+
+    public function notificationPreference(): HasOne
+    {
+        return $this->hasOne(NotificationPreference::class);
+    }
+
+    /**
+     * Whether the user opted in to email for a notification category.
+     */
+    public function wantsEmailForCategory(string $category): bool
+    {
+        $preference = $this->notificationPreference;
+
+        if ($preference === null) {
+            return true;
+        }
+
+        return match ($category) {
+            'applications' => $preference->email_applications,
+            'contracts' => $preference->email_contracts,
+            'invoices' => $preference->email_invoices,
+            'maintenance' => $preference->email_maintenance,
+            'announcements' => $preference->email_announcements,
+            default => true,
+        };
+    }
+
+    /**
+     * Unread Laravel database notifications count.
+     */
+    public function unreadPortalNotificationsCount(): int
+    {
+        return $this->unreadNotifications()->count();
+    }
+
+    /**
+     * Combined unread indicator for navigation (messages + system notifications).
+     */
+    public function unreadPortalAlertsCount(): int
+    {
+        return $this->unreadMessagesCount() + $this->unreadPortalNotificationsCount();
     }
 
     /**

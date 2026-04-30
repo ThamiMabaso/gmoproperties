@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Unit extends Model
@@ -75,9 +76,9 @@ class Unit extends Model
     /**
      * Get the active contract for this unit.
      */
-    public function activeContract()
+    public function activeContract(): HasOne
     {
-        return $this->contracts()->where('status', 'active')->first();
+        return $this->hasOne(Contract::class)->where('status', 'active');
     }
 
     /**

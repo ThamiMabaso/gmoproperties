@@ -21,6 +21,20 @@
                 <a href="{{ route('tenant.contracts.index') }}" class="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('tenant.contracts.*') ? 'bg-white/10 border-l-4 border-gmo-gold pl-[10px]' : '' }}">Contracts</a>
                 <a href="{{ route('tenant.invoices.index') }}" class="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('tenant.invoices.*') ? 'bg-white/10 border-l-4 border-gmo-gold pl-[10px]' : '' }}">Invoices</a>
                 <a href="{{ route('tenant.maintenance.index') }}" class="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('tenant.maintenance.*') ? 'bg-white/10 border-l-4 border-gmo-gold pl-[10px]' : '' }}">Maintenance</a>
+                @can('view_announcements')
+                    <a href="{{ route('tenant.announcements.index') }}" class="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('tenant.announcements.*') ? 'bg-white/10 border-l-4 border-gmo-gold pl-[10px]' : '' }}">Announcements</a>
+                @endcan
+                @can('view_notifications')
+                    <a href="{{ route('tenant.notifications.index') }}" class="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('tenant.notifications.*') ? 'bg-white/10 border-l-4 border-gmo-gold pl-[10px]' : '' }}">
+                        Notifications
+                        @if(Auth::user()->unreadPortalNotificationsCount() > 0)
+                            <span class="ml-2 inline-flex min-w-[1.25rem] justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-xs text-black">{{ Auth::user()->unreadPortalNotificationsCount() }}</span>
+                        @endif
+                    </a>
+                @endcan
+                @can('manage_notification_preferences')
+                    <a href="{{ route('tenant.notification-preferences.edit') }}" class="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('tenant.notification-preferences.*') ? 'bg-white/10 border-l-4 border-gmo-gold pl-[10px]' : '' }}">Email preferences</a>
+                @endcan
                 <a href="{{ route('tenant.messages.index') }}" class="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('tenant.messages.*') ? 'bg-white/10 border-l-4 border-gmo-gold pl-[10px]' : '' }}">
                     Messages
                     @if(Auth::user()->unreadMessagesCount() > 0)
@@ -51,6 +65,12 @@
                         <a href="{{ route('tenant.contracts.index') }}" class="font-medium {{ request()->routeIs('tenant.contracts.*') ? 'text-gmo-gold' : 'text-gray-700' }}">Contracts</a>
                         <a href="{{ route('tenant.invoices.index') }}" class="font-medium {{ request()->routeIs('tenant.invoices.*') ? 'text-gmo-gold' : 'text-gray-700' }}">Invoices</a>
                         <a href="{{ route('tenant.maintenance.index') }}" class="font-medium {{ request()->routeIs('tenant.maintenance.*') ? 'text-gmo-gold' : 'text-gray-700' }}">Maintenance</a>
+                        @can('view_announcements')
+                            <a href="{{ route('tenant.announcements.index') }}" class="font-medium {{ request()->routeIs('tenant.announcements.*') ? 'text-gmo-gold' : 'text-gray-700' }}">News</a>
+                        @endcan
+                        @can('view_notifications')
+                            <a href="{{ route('tenant.notifications.index') }}" class="font-medium {{ request()->routeIs('tenant.notifications.*') ? 'text-gmo-gold' : 'text-gray-700' }}">Notif.</a>
+                        @endcan
                         <a href="{{ route('tenant.messages.index') }}" class="font-medium {{ request()->routeIs('tenant.messages.*') ? 'text-gmo-gold' : 'text-gray-700' }}">Messages</a>
                     </div>
                 </div>

@@ -78,6 +78,14 @@ class LoginController extends Controller
 
             $user = Auth::user();
 
+            if (! $user instanceof User) {
+                Auth::logout();
+
+                throw ValidationException::withMessages([
+                    'email' => 'Unable to authenticate this account at the moment.',
+                ]);
+            }
+
             // Check if user is active
             if (! $user->is_active) {
                 Auth::logout();

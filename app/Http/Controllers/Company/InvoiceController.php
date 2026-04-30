@@ -8,6 +8,7 @@ use App\Http\Controllers\Company\BaseCompanyController;
 use App\Models\Company;
 use App\Models\Contract;
 use App\Models\Invoice;
+use App\Notifications\InvoiceIssuedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -124,7 +125,18 @@ class InvoiceController extends BaseCompanyController
         ]);
 
         // TODO: Generate invoice PDF
-        // TODO: Send invoice email to tenant
+        $invoice->loadMissing('tenant', 'company');
+
+        if ($invoice->tenant !== null && $invoice->company !== null) {
+            $amountLabel = number_format((float) $invoice->total_amount, 2) . ' (total)';
+
+            $invoice->tenant->notify(new InvoiceIssuedNotification(
+                (int) $invoice->id,
+                (string) $invoice->invoice_number,
+                (string) $invoice->company->name,
+                $amountLabel,
+            ));
+        }
 
         return redirect()->route('company.invoices.show', [$company, $invoice])
             ->with('success', 'Invoice created successfully.');
@@ -183,7 +195,7 @@ class InvoiceController extends BaseCompanyController
             // Calculate due date (typically 7 days from issue date)
             $dueDate = now()->addDays(7);
 
-            Invoice::create([
+            $invoice = Invoice::create([
                 'company_id' => $company->id,
                 'contract_id' => $contract->id,
                 'tenant_id' => $contract->tenant_id,
@@ -199,6 +211,19 @@ class InvoiceController extends BaseCompanyController
                 'status' => 'sent',
                 'description' => 'Monthly rent for ' . now()->format('F Y'),
             ]);
+
+            $invoice->loadMissing('tenant', 'company');
+
+            if ($invoice->tenant !== null) {
+                $amountLabel = number_format((float) $invoice->total_amount, 2) . ' (rent)';
+
+                $invoice->tenant->notify(new InvoiceIssuedNotification(
+                    (int) $invoice->id,
+                    (string) $invoice->invoice_number,
+                    (string) ($invoice->company?->name ?? $company->name),
+                    $amountLabel,
+                ));
+            }
 
             $generated++;
         }

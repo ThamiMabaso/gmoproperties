@@ -50,13 +50,18 @@ class FinancialReportController extends BaseCompanyController
         $monthlyProfit = $monthlyRevenue - $monthlyExpenses;
 
         // Revenue by month (last 12 months)
+        $driverName = DB::connection()->getDriverName();
+        $yearExpression = $driverName === 'sqlite'
+            ? "CAST(strftime('%Y', paid_at) AS INTEGER)"
+            : 'YEAR(paid_at)';
+        $monthExpression = $driverName === 'sqlite'
+            ? "CAST(strftime('%m', paid_at) AS INTEGER)"
+            : 'MONTH(paid_at)';
+
         $revenueByMonth = $company->invoices()
             ->where('status', 'paid')
-            ->select(
-                DB::raw('YEAR(paid_at) as year'),
-                DB::raw('MONTH(paid_at) as month'),
-                DB::raw('SUM(total_amount) as revenue')
-            )
+            ->whereNotNull('paid_at')
+            ->selectRaw("{$yearExpression} as year, {$monthExpression} as month, SUM(total_amount) as revenue")
             ->where('paid_at', '>=', now()->subMonths(12))
             ->groupBy('year', 'month')
             ->orderBy('year')

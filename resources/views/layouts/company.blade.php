@@ -38,7 +38,23 @@
                 <a href="{{ route('company.contracts.index', $company) }}" class="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('company.contracts.*') ? 'bg-white/10 border-l-4 border-gmo-gold pl-[10px]' : '' }}">Contracts</a>
                 <a href="{{ route('company.invoices.index', $company) }}" class="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('company.invoices.*') ? 'bg-white/10 border-l-4 border-gmo-gold pl-[10px]' : '' }}">Invoices</a>
                 <a href="{{ route('company.maintenance.index', $company) }}" class="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('company.maintenance.*') ? 'bg-white/10 border-l-4 border-gmo-gold pl-[10px]' : '' }}">Maintenance</a>
-                <a href="{{ route('company.financial.index', $company) }}" class="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('company.financial.*') ? 'bg-white/10 border-l-4 border-gmo-gold pl-[10px]' : '' }}">Financial reports</a>
+                @can('view_financial_reports')
+                    <a href="{{ route('company.financial.index', $company) }}" class="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('company.financial.*') ? 'bg-white/10 border-l-4 border-gmo-gold pl-[10px]' : '' }}">Financial reports</a>
+                @endcan
+                @can('view_announcements')
+                    <a href="{{ route('company.announcements.index', $company) }}" class="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('company.announcements.*') ? 'bg-white/10 border-l-4 border-gmo-gold pl-[10px]' : '' }}">Announcements</a>
+                @endcan
+                @can('view_notifications')
+                    <a href="{{ route('company.notifications.index', $company) }}" class="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('company.notifications.*') ? 'bg-white/10 border-l-4 border-gmo-gold pl-[10px]' : '' }}">
+                        Notifications
+                        @if(Auth::user()->unreadPortalNotificationsCount() > 0)
+                            <span class="ml-2 inline-flex min-w-[1.25rem] justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-xs text-black">{{ Auth::user()->unreadPortalNotificationsCount() }}</span>
+                        @endif
+                    </a>
+                @endcan
+                @can('manage_notification_preferences')
+                    <a href="{{ route('company.notification-preferences.edit', $company) }}" class="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('company.notification-preferences.*') ? 'bg-white/10 border-l-4 border-gmo-gold pl-[10px]' : '' }}">Email preferences</a>
+                @endcan
                 <a href="{{ route('company.messages.index', $company) }}" class="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('company.messages.*') ? 'bg-white/10 border-l-4 border-gmo-gold pl-[10px]' : '' }}">
                     Messages
                     @if(Auth::user()->unreadMessagesCount() > 0)
@@ -75,7 +91,15 @@
                         <a href="{{ route('company.contracts.index', $company) }}" class="font-medium {{ request()->routeIs('company.contracts.*') ? 'text-gmo-gold' : 'text-gray-700' }}">Contracts</a>
                         <a href="{{ route('company.invoices.index', $company) }}" class="font-medium {{ request()->routeIs('company.invoices.*') ? 'text-gmo-gold' : 'text-gray-700' }}">Invoices</a>
                         <a href="{{ route('company.maintenance.index', $company) }}" class="font-medium {{ request()->routeIs('company.maintenance.*') ? 'text-gmo-gold' : 'text-gray-700' }}">Maint.</a>
-                        <a href="{{ route('company.financial.index', $company) }}" class="font-medium {{ request()->routeIs('company.financial.*') ? 'text-gmo-gold' : 'text-gray-700' }}">Financial</a>
+                        @can('view_financial_reports')
+                            <a href="{{ route('company.financial.index', $company) }}" class="font-medium {{ request()->routeIs('company.financial.*') ? 'text-gmo-gold' : 'text-gray-700' }}">Financial</a>
+                        @endcan
+                        @can('view_announcements')
+                            <a href="{{ route('company.announcements.index', $company) }}" class="font-medium {{ request()->routeIs('company.announcements.*') ? 'text-gmo-gold' : 'text-gray-700' }}">News</a>
+                        @endcan
+                        @can('view_notifications')
+                            <a href="{{ route('company.notifications.index', $company) }}" class="font-medium {{ request()->routeIs('company.notifications.*') ? 'text-gmo-gold' : 'text-gray-700' }}">Notif.</a>
+                        @endcan
                         <a href="{{ route('company.messages.index', $company) }}" class="font-medium {{ request()->routeIs('company.messages.*') ? 'text-gmo-gold' : 'text-gray-700' }}">Messages</a>
                     </div>
                 </div>

@@ -14,6 +14,7 @@ A comprehensive property management platform built with Laravel 10, featuring th
 - Feature access control per company
 - System-wide analytics and financial reporting
 - Company approval and activation workflow
+- **Platform updates report** (`/admin/reports/updates`) — cross-portal activity timeline (companies, users, applications, contracts, invoices, maintenance, payments) with date and company filters, CSV/PDF export, and export audit rows in `admin_update_reports`
 
 ### Client Admin Portal (Company Portal)
 - Building and unit management
@@ -23,6 +24,9 @@ A comprehensive property management platform built with Laravel 10, featuring th
 - Maintenance ticket management
 - Financial reporting and analytics
 - Messaging system
+- **Announcements** — company admins and property managers can create building-scoped or company-wide posts; optional schedule (`publish_at`) and expiry; drafts visible to author (managers: own drafts only); published items visible to staff; `php artisan announcements:publish-scheduled` (also registered in the scheduler) publishes due items
+- **Notifications** — Laravel database notifications plus optional email per category; in-app **notification center** and **email preferences** (applications, contracts, invoices, maintenance, announcements)
+- **Event-driven alerts** — staff notified on new tenant applications and new maintenance tickets; assignees on ticket assignment; tenants on application decisions, invoices, contract signature milestones, and maintenance status updates
 
 ### Tenant Portal
 - Property browsing and application submission
@@ -30,6 +34,8 @@ A comprehensive property management platform built with Laravel 10, featuring th
 - Invoice viewing and payment tracking
 - Maintenance request submission
 - Messaging system
+- **Announcements** — read company-published posts for their company
+- **Notifications** and **email preferences** — same categories as the company portal where permissions apply
 
 ### Frontend Application
 - **Homepage** - Company profile introduction with hero section
@@ -94,6 +100,8 @@ php artisan db:seed --class=RolesAndPermissionsSeeder
 php artisan db:seed --class=TestUsersSeeder
 ```
 
+New migrations (from 2026-04-30 onward) add the `notifications` table, `announcements` / `announcement_reads`, `notification_preferences`, `admin_update_reports`, and Spatie permissions for reports, announcements, and notifications. Existing environments should run `migrate` once; roles receive the new permissions via the migration grant step (and the seeder on fresh installs).
+
 8. Build assets:
 ```bash
 npm run build
@@ -111,6 +119,10 @@ php artisan serve
 
 Visit `http://localhost:8000` in your browser.
 
+### Scheduler (scheduled announcements)
+
+Scheduled announcements are published when `publish_at` is in the past and the row is still unpublished. Register Laravel’s scheduler on the server (example: run `* * * * * cd /path-to-app && php artisan schedule:run >> /dev/null 2>&1`). For local testing you can run `php artisan announcements:publish-scheduled` manually.
+
 ## Test Credentials
 
 See `CREDENTIALS.md` for test user credentials for all portals.
@@ -120,13 +132,17 @@ See `CREDENTIALS.md` for test user credentials for all portals.
 ```
 gmoproperties/
 ├── app/
+│   ├── Console/Commands/       # Artisan commands (e.g. scheduled announcements)
 │   ├── Http/
 │   │   ├── Controllers/
 │   │   │   ├── Admin/          # Service Provider Admin controllers
 │   │   │   ├── Company/        # Client Admin Portal controllers
 │   │   │   └── Tenant/         # Tenant Portal controllers
 │   │   └── Middleware/         # Custom middleware
-│   └── Models/                 # Eloquent models
+│   ├── Models/                 # Eloquent models
+│   ├── Notifications/        # Laravel notifications (database + mail)
+│   ├── Services/               # Domain services (reports, announcements)
+│   └── Support/                # Small helpers (e.g. staff recipient lists)
 ├── database/
 │   ├── migrations/             # Database migrations
 │   └── seeders/                # Database seeders
@@ -163,6 +179,9 @@ gmoproperties/
 ### Service Provider Admin Portal
 - `/admin/dashboard` - Admin dashboard
 - `/admin/companies` - Company management
+- `/admin/reports/updates` - Platform updates report (filters, table)
+- `/admin/reports/updates/export/csv` - CSV export
+- `/admin/reports/updates/export/pdf` - PDF export
 
 ### Client Admin Portal
 - `/{company}/dashboard` - Company dashboard
@@ -174,6 +193,9 @@ gmoproperties/
 - `/{company}/maintenance` - Maintenance tickets
 - `/{company}/financial` - Financial reports
 - `/{company}/messages` - Messaging
+- `/{company}/announcements` - Announcements (list, create, show, edit)
+- `/{company}/notifications` - Notification center
+- `/{company}/notification-preferences` - Email notification preferences
 
 ### Tenant Portal
 - `/tenant/dashboard` - Tenant dashboard
@@ -182,6 +204,9 @@ gmoproperties/
 - `/tenant/invoices` - Invoices
 - `/tenant/maintenance` - Maintenance requests
 - `/tenant/messages` - Messaging
+- `/tenant/announcements` - Announcements
+- `/tenant/notifications` - Notification center
+- `/tenant/notification-preferences` - Email notification preferences
 
 ## Technologies
 
@@ -223,3 +248,4 @@ This project follows:
 ## License
 
 MIT
+ 

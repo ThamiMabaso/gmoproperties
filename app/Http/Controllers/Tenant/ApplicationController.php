@@ -8,8 +8,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\TenantApplication;
 use App\Models\Unit;
+use App\Notifications\TenantApplicationSubmittedNotification;
+use App\Support\CompanyStaffRecipients;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 
 class ApplicationController extends Controller
@@ -189,7 +192,21 @@ class ApplicationController extends Controller
             ]);
         }
 
-        // TODO: Send notification email to company admin
+        $unit->loadMissing('building', 'company');
+
+        if ($unit->company !== null) {
+            $unitLabel = ($unit->building?->name ?? 'Building') . ' — Unit ' . $unit->unit_number;
+
+            Notification::send(
+                CompanyStaffRecipients::forBuilding($unit->company, $unit->building_id),
+                new TenantApplicationSubmittedNotification(
+                    (string) $unit->company->slug,
+                    (int) $application->id,
+                    (string) $unit->company->name,
+                    $unitLabel,
+                )
+            );
+        }
 
         return redirect()->route('tenant.applications.show', $application)
             ->with('success', 'Your application has been submitted successfully. You will be notified once it is reviewed.');

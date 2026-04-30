@@ -6,8 +6,11 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Models\MaintenanceTicket;
+use App\Notifications\MaintenanceTicketCreatedNotification;
+use App\Support\CompanyStaffRecipients;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
 class MaintenanceTicketController extends Controller
@@ -95,7 +98,22 @@ class MaintenanceTicketController extends Controller
             'status' => 'open',
         ]);
 
-        // TODO: Send notification to property manager
+        $ticket->loadMissing('tenant', 'unit.building', 'company');
+
+        if ($ticket->company !== null) {
+            $tenantName = $ticket->tenant?->name ?? 'Tenant';
+
+            Notification::send(
+                CompanyStaffRecipients::forBuilding($ticket->company, $ticket->unit?->building_id),
+                new MaintenanceTicketCreatedNotification(
+                    (string) $ticket->company->slug,
+                    (int) $ticket->id,
+                    (string) $ticket->ticket_number,
+                    (string) $ticket->title,
+                    $tenantName,
+                )
+            );
+        }
 
         return redirect()->route('tenant.maintenance.show', $ticket)
             ->with('success', 'Maintenance ticket created successfully.');

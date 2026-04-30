@@ -8,6 +8,7 @@ use App\Models\Company;
 use App\Models\Contract;
 use App\Models\TenantApplication;
 use App\Models\User;
+use App\Notifications\TenantApplicationDecisionNotification;
 use App\Support\DashboardChartData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -226,8 +227,24 @@ class TenantApplicationController extends BaseCompanyController
             // Update unit status
             $application->unit->update(['status' => 'reserved']);
 
-            // TODO: Send email to tenant with login credentials and contract signing link
         });
+
+        $application->refresh();
+        $application->loadMissing('unit.building', 'company');
+        $tenantUser = User::query()->where('email', $application->email)->first();
+
+        if ($tenantUser !== null && $application->unit !== null) {
+            $unitLabel = ($application->unit->building?->name ?? 'Building') . ' — Unit ' . $application->unit->unit_number;
+            $companyName = $application->company?->name ?? $company->name;
+
+            $tenantUser->notify(new TenantApplicationDecisionNotification(
+                (int) $application->id,
+                'approved',
+                (string) $companyName,
+                $unitLabel,
+                null,
+            ));
+        }
 
         return redirect()->route('company.applications.show', [$company, $application])
             ->with('success', 'Application approved. Tenant account created and contract generated.');
@@ -263,7 +280,21 @@ class TenantApplicationController extends BaseCompanyController
             'reviewed_at' => now(),
         ]);
 
-        // TODO: Send rejection email to applicant
+        $application->loadMissing('unit.building', 'company');
+        $applicant = User::query()->where('email', $application->email)->first();
+
+        if ($applicant !== null && $application->unit !== null) {
+            $unitLabel = ($application->unit->building?->name ?? 'Building') . ' — Unit ' . $application->unit->unit_number;
+            $companyName = $application->company?->name ?? $company->name;
+
+            $applicant->notify(new TenantApplicationDecisionNotification(
+                (int) $application->id,
+                'rejected',
+                (string) $companyName,
+                $unitLabel,
+                $validated['rejection_reason'],
+            ));
+        }
 
         return redirect()->route('company.applications.show', [$company, $application])
             ->with('success', 'Application rejected.');

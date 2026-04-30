@@ -82,6 +82,15 @@ class RolesAndPermissionsSeeder extends Seeder
             'view_financial_reports',
             'export_financial_reports',
 
+            // Admin reports & portal communications
+            'view_admin_reports',
+            'export_admin_reports',
+            'view_announcements',
+            'create_announcements',
+            'edit_announcements',
+            'view_notifications',
+            'manage_notification_preferences',
+
             // System administration
             'manage_system',
             'view_analytics',
@@ -133,6 +142,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'edit_expenses',
             'view_financial_reports',
             'export_financial_reports',
+            'view_announcements',
+            'create_announcements',
+            'edit_announcements',
+            'view_notifications',
+            'manage_notification_preferences',
         ]);
 
         // Property Manager - Limited access
@@ -155,6 +169,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'complete_maintenance',
             'view_expenses',
             'create_expenses',
+            'view_announcements',
+            'create_announcements',
+            'edit_announcements',
+            'view_notifications',
+            'manage_notification_preferences',
         ]);
 
         // Tenant - Limited access to their own data
@@ -166,6 +185,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'view_payments',
             'create_maintenance',
             'view_maintenance',
+            'view_announcements',
+            'view_notifications',
+            'manage_notification_preferences',
         ]);
     }
 }

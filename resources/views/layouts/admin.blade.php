@@ -25,6 +25,11 @@
                 <a href="{{ route('search') }}" class="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('search') ? 'bg-white/10 border-l-4 border-gmo-gold pl-[10px]' : '' }}">
                     Search
                 </a>
+                @can('view_admin_reports')
+                    <a href="{{ route('admin.reports.updates.index') }}" class="block rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-white/10 {{ request()->routeIs('admin.reports.updates.*') ? 'bg-white/10 border-l-4 border-gmo-gold pl-[10px]' : '' }}">
+                        Platform updates
+                    </a>
+                @endcan
             </nav>
         </aside>
 
@@ -47,6 +52,9 @@
                         <a href="{{ route('admin.dashboard') }}" class="font-medium {{ request()->routeIs('admin.dashboard') ? 'text-gmo-gold' : 'text-gray-700' }}">Dashboard</a>
                         <a href="{{ route('admin.companies.index') }}" class="font-medium {{ request()->routeIs('admin.companies.*') ? 'text-gmo-gold' : 'text-gray-700' }}">Companies</a>
                         <a href="{{ route('search') }}" class="font-medium {{ request()->routeIs('search') ? 'text-gmo-gold' : 'text-gray-700' }}">Search</a>
+                        @can('view_admin_reports')
+                            <a href="{{ route('admin.reports.updates.index') }}" class="font-medium {{ request()->routeIs('admin.reports.updates.*') ? 'text-gmo-gold' : 'text-gray-700' }}">Updates</a>
+                        @endcan
                     </div>
                 </div>
             </header>

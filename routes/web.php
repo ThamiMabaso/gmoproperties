@@ -3,8 +3,10 @@
 use App\Http\Controllers\AboutController;
 use App\Http\Controllers\Admin\CompanyController as AdminCompanyController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\UpdatesReportController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Company\AnnouncementController as CompanyAnnouncementController;
 use App\Http\Controllers\Company\BuildingController;
 use App\Http\Controllers\Company\CompanyController as CompanySettingsController;
 use App\Http\Controllers\Company\CompanyUserController;
@@ -14,6 +16,8 @@ use App\Http\Controllers\Company\FinancialReportController;
 use App\Http\Controllers\Company\InvoiceController;
 use App\Http\Controllers\Company\MaintenanceTicketController;
 use App\Http\Controllers\Company\MessageController as CompanyMessageController;
+use App\Http\Controllers\Company\NotificationCenterController as CompanyNotificationCenterController;
+use App\Http\Controllers\Company\NotificationPreferenceController as CompanyNotificationPreferenceController;
 use App\Http\Controllers\Company\TenantApplicationController;
 use App\Http\Controllers\Company\UnitController;
 use App\Http\Controllers\ContactController;
@@ -23,12 +27,15 @@ use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TeamController;
+use App\Http\Controllers\Tenant\AnnouncementController as TenantAnnouncementController;
 use App\Http\Controllers\Tenant\ApplicationController as TenantApplicationControllerAlias;
 use App\Http\Controllers\Tenant\ContractController as TenantContractController;
 use App\Http\Controllers\Tenant\DashboardController as TenantDashboardController;
 use App\Http\Controllers\Tenant\InvoiceController as TenantInvoiceController;
 use App\Http\Controllers\Tenant\MaintenanceTicketController as TenantMaintenanceTicketController;
 use App\Http\Controllers\Tenant\MessageController as TenantMessageController;
+use App\Http\Controllers\Tenant\NotificationCenterController as TenantNotificationCenterController;
+use App\Http\Controllers\Tenant\NotificationPreferenceController as TenantNotificationPreferenceController;
 use App\Http\Controllers\ThankYouController;
 use App\Http\Controllers\VisionController;
 use Illuminate\Support\Facades\Route;
@@ -93,6 +100,10 @@ Route::get('/search', [SearchController::class, 'search'])
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:service_provider_admin'])->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::resource('companies', AdminCompanyController::class);
+
+    Route::get('/reports/updates', [UpdatesReportController::class, 'index'])->name('reports.updates.index');
+    Route::get('/reports/updates/export/csv', [UpdatesReportController::class, 'exportCsv'])->name('reports.updates.export.csv');
+    Route::get('/reports/updates/export/pdf', [UpdatesReportController::class, 'exportPdf'])->name('reports.updates.export.pdf');
 });
 
 /*
@@ -133,6 +144,21 @@ Route::prefix('tenant')->name('tenant.')->middleware(['auth', 'role:tenant'])->g
     Route::get('/messages/{message}', [TenantMessageController::class, 'show'])->name('messages.show');
     Route::post('/messages/{message}/read', [TenantMessageController::class, 'markAsRead'])->name('messages.read');
     Route::delete('/messages/{message}', [TenantMessageController::class, 'destroy'])->name('messages.destroy');
+
+    Route::get('/announcements', [TenantAnnouncementController::class, 'index'])->name('announcements.index');
+    Route::get('/announcements/{announcement}', [TenantAnnouncementController::class, 'show'])->name('announcements.show');
+    Route::post('/announcements/{announcement}/read', [TenantAnnouncementController::class, 'markRead'])->name('announcements.read');
+
+    Route::middleware('can:view_notifications')->group(function () {
+        Route::get('/notifications', [TenantNotificationCenterController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/read-all', [TenantNotificationCenterController::class, 'markAllRead'])->name('notifications.read-all');
+        Route::post('/notifications/{id}/read', [TenantNotificationCenterController::class, 'markRead'])->name('notifications.read');
+    });
+
+    Route::middleware('can:manage_notification_preferences')->group(function () {
+        Route::get('/notification-preferences', [TenantNotificationPreferenceController::class, 'edit'])->name('notification-preferences.edit');
+        Route::put('/notification-preferences', [TenantNotificationPreferenceController::class, 'update'])->name('notification-preferences.update');
+    });
 });
 
 /*
@@ -198,4 +224,19 @@ Route::prefix('{company}')
         Route::get('/messages/{message}', [CompanyMessageController::class, 'show'])->name('messages.show');
         Route::post('/messages/{message}/read', [CompanyMessageController::class, 'markAsRead'])->name('messages.read');
         Route::delete('/messages/{message}', [CompanyMessageController::class, 'destroy'])->name('messages.destroy');
+
+        Route::get('/announcements', [CompanyAnnouncementController::class, 'index'])->name('announcements.index');
+        Route::get('/announcements/create', [CompanyAnnouncementController::class, 'create'])->name('announcements.create');
+        Route::post('/announcements', [CompanyAnnouncementController::class, 'store'])->name('announcements.store');
+        Route::get('/announcements/{announcement}', [CompanyAnnouncementController::class, 'show'])->name('announcements.show');
+        Route::get('/announcements/{announcement}/edit', [CompanyAnnouncementController::class, 'edit'])->name('announcements.edit');
+        Route::put('/announcements/{announcement}', [CompanyAnnouncementController::class, 'update'])->name('announcements.update');
+        Route::post('/announcements/{announcement}/read', [CompanyAnnouncementController::class, 'markRead'])->name('announcements.read');
+
+        Route::get('/notifications', [CompanyNotificationCenterController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/read-all', [CompanyNotificationCenterController::class, 'markAllRead'])->name('notifications.read-all');
+        Route::post('/notifications/{id}/read', [CompanyNotificationCenterController::class, 'markRead'])->name('notifications.read');
+
+        Route::get('/notification-preferences', [CompanyNotificationPreferenceController::class, 'edit'])->name('notification-preferences.edit');
+        Route::put('/notification-preferences', [CompanyNotificationPreferenceController::class, 'update'])->name('notification-preferences.update');
     });

@@ -10,9 +10,12 @@ use App\Models\Company;
 use App\Models\Contract;
 use App\Models\Unit;
 use App\Models\User;
+use App\Notifications\ContractSignatureUpdateNotification;
+use App\Support\CompanyStaffRecipients;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -203,7 +206,38 @@ class ContractController extends BaseCompanyController
             $contract->unit->update(['status' => 'occupied']);
 
             // TODO: Generate signed contract PDF
-            // TODO: Send notification emails
+        }
+
+        $contract->refresh();
+        $contract->loadMissing('company', 'tenant', 'unit.building');
+        $slug = (string) ($contract->company?->slug ?? $company->slug);
+
+        if ($contract->status === 'active' && $contract->tenant instanceof User) {
+            $contract->tenant->notify(new ContractSignatureUpdateNotification(
+                $slug,
+                (int) $contract->id,
+                (string) $contract->contract_number,
+                ContractSignatureUpdateNotification::VARIANT_FULLY_ACTIVE,
+            ));
+
+            $staff = CompanyStaffRecipients::forBuilding(
+                $contract->company ?? $company,
+                $contract->unit?->building_id
+            );
+
+            Notification::send($staff, new ContractSignatureUpdateNotification(
+                $slug,
+                (int) $contract->id,
+                (string) $contract->contract_number,
+                ContractSignatureUpdateNotification::VARIANT_FULLY_ACTIVE,
+            ));
+        } elseif ($contract->tenant instanceof User) {
+            $contract->tenant->notify(new ContractSignatureUpdateNotification(
+                $slug,
+                (int) $contract->id,
+                (string) $contract->contract_number,
+                ContractSignatureUpdateNotification::VARIANT_COMPANY_SIGNED,
+            ));
         }
 
         return back()->with('success', 'Contract signed successfully.');

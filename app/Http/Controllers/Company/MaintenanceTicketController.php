@@ -8,6 +8,7 @@ use App\Http\Controllers\Company\BaseCompanyController;
 use App\Models\Company;
 use App\Models\MaintenanceTicket;
 use App\Models\User;
+use App\Notifications\MaintenanceTicketUpdatedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -93,7 +94,16 @@ class MaintenanceTicketController extends BaseCompanyController
             'status' => 'assigned',
         ]);
 
-        // TODO: Send notification to assigned user
+        $ticket->loadMissing('company');
+        $slug = (string) ($ticket->company?->slug ?? $company->slug);
+        $line = "Ticket {$ticket->ticket_number} was assigned to you.";
+
+        $assignee->notify(new MaintenanceTicketUpdatedNotification(
+            $slug,
+            (int) $ticket->id,
+            (string) $ticket->ticket_number,
+            $line,
+        ));
 
         return back()->with('success', 'Ticket assigned successfully.');
     }
@@ -135,7 +145,18 @@ class MaintenanceTicketController extends BaseCompanyController
 
         $ticket->update($updateData);
 
-        // TODO: Send notification to tenant if completed
+        $ticket->loadMissing('company', 'tenant');
+        $slug = (string) ($ticket->company?->slug ?? $company->slug);
+        $line = "Ticket {$ticket->ticket_number} status is now {$validated['status']}.";
+
+        if ($ticket->tenant !== null) {
+            $ticket->tenant->notify(new MaintenanceTicketUpdatedNotification(
+                $slug,
+                (int) $ticket->id,
+                (string) $ticket->ticket_number,
+                $line,
+            ));
+        }
 
         return back()->with('success', 'Ticket status updated successfully.');
     }
